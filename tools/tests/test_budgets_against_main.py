@@ -144,7 +144,9 @@ def test_the_realignment_list_as_committed_is_well_formed_and_matches_main():
     assert engine.realign_list_problems(rows, main_rows) == []
     hook = json.loads(engine.BUDGET.read_text(encoding="utf-8"))
     removed = json.loads(engine.REMOVED_BUDGET.read_text(encoding="utf-8"))
-    assert engine.budget_raise_problems(hook, removed, main_hook, main_removed, main_rows) == []
+    raises = json.loads(engine.RAISES.read_text(encoding="utf-8")) if engine.RAISES.is_file() else []
+    assert engine.budget_raise_problems(hook, removed, main_hook, main_removed, main_rows,
+                                        engine.new_raise_rows(raises, engine.load_main_raises())) == []
 
 
 # The register of declared raises: tools/hook-budget-raises.json, read from main, only grows.
