@@ -366,5 +366,37 @@
   "line": 1,
   "cause": "check-8 delta accepted by name, PM-DECISIONS.md, 'Decisioni del pm del 22/11 mattina' (G2 contro G51): removed budget 0 -> 1: expression-wrap form: `doReposition(DesktopRect(screen->GetRectDisplayPix()));` -> `doReposition(mozilla::widget::StealthFullscreenRectOr(*this, DesktopRect(...)));  // STEALTH-HOOK(...)` (1 Mozilla line rewritten) replacing main's added 4-line block `if (const auto declared = StealthDeclaredFullscreenRect(*this)) { doReposition(*declared); return void(...); }` (hook lines 5 -> 3, no Mozilla line removed on main). Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
   "ref": "design/PM-DECISIONS.md, decisioni del pm del 22/11 mattina"
+ },
+ {
+  "file": "dom/base/test/gtest/moz.build",
+  "kind": "hook",
+  "main": 1,
+  "line": 4,
+  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
+  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+ },
+ {
+  "file": "netwerk/protocol/res/moz.build",
+  "kind": "hook",
+  "main": 2,
+  "line": 4,
+  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
+  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+ },
+ {
+  "file": "intl/locale/tests/gtest/moz.build",
+  "kind": "hook",
+  "main": 1,
+  "line": 2,
+  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
+  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+ },
+ {
+  "file": "toolkit/components/urlformatter/moz.build",
+  "kind": "hook",
+  "main": 1,
+  "line": 2,
+  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
+  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
  }
 ]
