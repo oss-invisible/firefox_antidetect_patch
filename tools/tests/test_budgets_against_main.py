@@ -131,7 +131,7 @@ def test_a_row_is_consumed_once_main_reaches_the_value():
 
 def test_the_realignment_list_as_committed_is_well_formed_and_matches_main():
     rows = json.loads(engine.REALIGN.read_text(encoding="utf-8"))
-    assert len(rows) == 50 and len({(r["file"], r["kind"]) for r in rows}) == 50
+    assert len(rows) == 51 and len({(r["file"], r["kind"]) for r in rows}) == 51
     for r in rows:
         assert set(r) == {"file", "kind", "main", "line", "cause", "ref"} and r["kind"] in ("hook", "removed")
         assert r["line"] >= r["main"] and r["cause"] and r["ref"], r

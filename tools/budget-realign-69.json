@@ -398,5 +398,13 @@
   "line": 2,
   "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
   "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+ },
+ {
+  "file": "gfx/tests/gtest/moz.build",
+  "kind": "hook",
+  "main": 13,
+  "line": 14,
+  "cause": "Registrazione: una riga per file di test (noise-projection, font-list, bundle, metrics), ognuna con il suo marcatore (pm, PM-DECISIONS.md, riallineamento dei tetti, riga in più del 22/11)",
+  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
  }
 ]
