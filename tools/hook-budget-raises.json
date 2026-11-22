@@ -1,1 +1,12 @@
-[]
+[
+ {
+  "file": "netwerk/ipc/DocumentLoadListener.cpp",
+  "from": 1,
+  "to": 4,
+  "folder": "automation/navigation",
+  "reason": "goto abortito a torto per un documento che fa il commit (intermittente della 68): notifica della decisione di cambio processo",
+  "decided_by": "Federico 22/11 (le correzioni del motore per gli intermittenti entrano nella 69); disegno e diff letti dal pm",
+  "date": "2026-11-22",
+  "test": "wrapper:tests/test_a_navigation_that_moved_is_told_by_the_engine_e2e.py::test_a_cross_site_goto_is_told_moved_by_the_engine_with_the_process_it_left"
+ }
+]
