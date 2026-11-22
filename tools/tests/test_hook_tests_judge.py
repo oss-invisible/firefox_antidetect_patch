@@ -259,6 +259,36 @@ def cases() -> list:
         add("judge: py, xpcshell and cargo tests are judged when a leg keeps their junit-* artifact%s" % ("" if not problems and all(r[3] == "PASS" for r in rows) else ": %s %s" % (rows, problems)),
             not problems and all(r[3] == "PASS" for r in rows))
 
+    # invariant:/case: resolve on a testcase whose NAME is exactly <x> (one junit case per invariant or case), not only on a parameter id
+    with tempfile.TemporaryDirectory() as tmp:
+        hooks = {"x": [hook("wrapper:tests/e2e/test_x.py::invariant:fullscreen_is_the_screen"), hook("wrapper:tests/e2e/test_x.py::case:dpr_is_two", file="c")]}
+        ok = junit(("tests.e2e.test_x", "fullscreen_is_the_screen", "passed"), ("tests.e2e.test_x", "dpr_is_two", "passed"))
+        rows, problems, _ = fake(tmp, hooks, wrapper={"wrapper.e2e.x-linux": ok}).run()
+        add("judge: invariant:<x> and case:<x> resolve on a testcase named exactly <x>%s" % ("" if not problems and all(r[3] == "PASS" for r in rows) else ": %s %s" % (rows, problems)),
+            not problems and all(r[3] == "PASS" for r in rows))
+    with tempfile.TemporaryDirectory() as tmp:
+        hooks = {"x": [hook("wrapper:tests/e2e/test_x.py::invariant:fullscreen_is_the_screen")]}
+        bad = junit(("tests.e2e.test_x", "fullscreen_is_the_screen", "failed"))
+        rows, problems, _ = fake(tmp, hooks, wrapper={"wrapper.e2e.x-linux": bad}).run()
+        add("judge: an invariant testcase named exactly <x> that failed is red", red_on(rows, problems, "failed"))
+    with tempfile.TemporaryDirectory() as tmp:
+        hooks = {"x": [hook("wrapper:tests/e2e/test_x.py::invariant:fullscreen_is_the_screen")]}
+        other = junit(("tests.e2e.test_x", "fullscreen_is_something_else", "passed"))
+        rows, problems, _ = fake(tmp, hooks, wrapper={"wrapper.e2e.x-linux": other}).run()
+        add("judge: an invariant that no testcase is named for is red", red_on(rows, problems, "in no wrapper junit"))
+
+    # cargo: the FULL test path only; the same final name in another module is another test
+    cargo_ref = "cargo:webrender::render_backend::stealth_shared_fonts::tests::same_name"
+    with tempfile.TemporaryDirectory() as tmp:
+        other = {"junit-cargo/c.xml": junit(("webrender", "other_mod::tests::same_name", "passed"), ("webrender", "same_name", "passed"))}
+        rows, problems, _ = fake(tmp, {"x": [hook(cargo_ref, file="c")]}, extra_junit=other).run()
+        add("judge: a cargo test is not satisfied by a same-named test of another module, nor by its final name alone", red_on(rows, problems, "in no cargo junit"))
+    with tempfile.TemporaryDirectory() as tmp:
+        full = {"junit-cargo/c.xml": junit(("webrender", "render_backend::stealth_shared_fonts::tests::same_name", "passed"), ("webrender", "other_mod::tests::same_name", "failed"))}
+        rows, problems, _ = fake(tmp, {"x": [hook(cargo_ref, file="c")]}, extra_junit=full).run()
+        add("judge: a cargo test is judged on its full path (the other module's failure is not this test's)%s" % ("" if not problems and rows[0][3] == "PASS" else ": %s %s" % (rows, problems)),
+            not problems and rows[0][3] == "PASS")
+
     # a judge that judged nothing, unreadable files, unknown kinds
     with tempfile.TemporaryDirectory() as tmp:
         rows, problems, counts = fake(tmp, {"x": [hook(""), hook("", file="b")]}).run()

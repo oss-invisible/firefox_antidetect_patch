@@ -296,7 +296,7 @@ def _params(segment: str) -> str:
 
 def pytest_outcomes(cases, source: str, path: str, test: str) -> list:
     """The outcomes of the tests of `path` that `test` names: the node id, or the node id without its parameters, or the function without its class;
-    `invariant:<x>` and `case:<x>` also match the id of a parameter."""
+    `invariant:<x>` and `case:<x>` also match the id of a parameter, or a test whose name is exactly `<x>`."""
     found = []
     wanted_param = test.split(":", 1)[1] if test.startswith(("invariant:", "case:")) else None
     for src, nid, outcome in cases:
@@ -309,7 +309,7 @@ def pytest_outcomes(cases, source: str, path: str, test: str) -> list:
         full = "::".join(rest)
         names = {full, _base(full), rest[-1], _base(rest[-1])}
         params = _params(rest[-1])
-        if test in names or (wanted_param is not None and params in (test, wanted_param)):
+        if test in names or (wanted_param is not None and (params in (test, wanted_param) or wanted_param in names)):
             found.append(outcome)
     return found
 
@@ -355,8 +355,8 @@ def judge_cargo(rest: str, res: Results, _ctx: dict) -> str:
     crate, sep, test = rest.partition("::")
     if not (crate and sep and test):
         return "cargo:<crate>::<test path> expected"
-    leaf = test.rsplit("::", 1)[-1]
-    mine = [o for c, n, o in res.cargo if (crate in c or crate in n) and n in (test, leaf, "%s::%s" % (crate, test))]
+    # the FULL test path only, as `cargo test` prints it: the same final name in another module is another test
+    mine = [o for c, n, o in res.cargo if (crate in c or crate in n) and n in (test, "%s::%s" % (crate, test))]
     if not mine:
         return "%s is in no cargo junit of the run (no leg runs cargo tests)" % rest
     bad = _worst(mine)
