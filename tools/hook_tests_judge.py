@@ -27,7 +27,7 @@ The results it reads, all of this run's own artifacts, no network:
     python3 tools/hook_tests_judge.py --series .series --results results --gtest-reports gtest-reports --junit junit \\
         --gtest-filter "$FILTER" --gtests true [--gtest-run PATH] [--min-named 1] [--summary FILE]
 
-Its cases: tools/tests/test_hook_tests_judge.py. Stdlib only; it imports nothing of the Firefox tree (the one file it loads, gtest_run.py, is read for its NOT_ON table only).
+Its cases: tools/tests/test_hook_tests_judge.py. Stdlib only; it imports nothing of the Firefox tree (the one file it loads, gtest_run.py, is read for its NOT_ON and NOT_ON_TESTS tables only).
 """
 from __future__ import annotations
 
@@ -243,7 +243,8 @@ def filter_matches(gtest_filter: str, full_name: str) -> bool:
 
 
 def load_not_on(path):
-    """NOT_ON of gtest_run.py: the suites that do not exist on a platform. From the copy the gtest jobs ran (--gtest-run), else the one of the series this script lives in."""
+    """-> (NOT_ON, NOT_ON_TESTS) of gtest_run.py: the suites that do not exist on a platform, and the single tests that do not exist there inside a suite that does.
+    From the copy the gtest jobs ran (--gtest-run), else the one of the series this script lives in. A gtest_run.py with no NOT_ON_TESTS (an older line) has none."""
     path = Path(path) if path else Path(__file__).resolve().parents[1] / "platform" / "ci" / "src" / "scripts" / "ci" / "gtest_run.py"
     spec = importlib.util.spec_from_file_location("gtest_run_for_judge", str(path))
     module = importlib.util.module_from_spec(spec)
@@ -252,7 +253,8 @@ def load_not_on(path):
         spec.loader.exec_module(module)
     finally:
         sys.dont_write_bytecode = keep
-    return {k: set(v) for k, v in module.NOT_ON.items()}
+    return ({k: set(v) for k, v in module.NOT_ON.items()},
+            {k: set(v) for k, v in getattr(module, "NOT_ON_TESTS", {}).items()})
 
 
 # --------------------------------------------------------------------------- judging one reference
@@ -274,7 +276,16 @@ def judge_gtest(rest: str, res: Results, ctx: dict) -> str:
     if not legs:
         return "the suite %s exists on no platform (NOT_ON of gtest_run.py)" % suite
     reports = res.gtest.get((suite, name), {})
+    judged = []
     for platform in legs:
+        if "%s.%s" % (suite, name) in ctx["not_on_tests"].get(platform, ()):
+            if reports.get(platform):  # the table cannot excuse a test that ran: a stale entry hides a test that exists
+                return "%s.%s is listed as not on the %s leg (NOT_ON_TESTS of gtest_run.py) but ran there" % (suite, name, platform)
+            continue
+        judged.append(platform)
+    if not judged:
+        return "the test %s.%s exists on no platform (NOT_ON_TESTS of gtest_run.py)" % (suite, name)
+    for platform in judged:
         if platform not in res.gtest_legs:
             return "the gtest report of the %s leg is not in the run" % platform
         outcomes = reports.get(platform)
@@ -385,10 +396,10 @@ def judge(series, results=None, gtest_reports=None, junit=None, gtest_filter="",
     named, unnamed, untestable, problems = collect(Path(series))
     res = read_results(results, gtest_reports, junit)
     problems = problems + res.problems
-    ctx = {"gtest_filter": gtest_filter, "gtests": str(gtests).lower(), "not_on": {}}
+    ctx = {"gtest_filter": gtest_filter, "gtests": str(gtests).lower(), "not_on": {}, "not_on_tests": {}}
     if any(ref.startswith("gtest:") for _f, _h, ref in named):
         try:
-            ctx["not_on"] = load_not_on(gtest_run)
+            ctx["not_on"], ctx["not_on_tests"] = load_not_on(gtest_run)
         except Exception as exc:  # noqa: BLE001 - a judge that cannot read its table is red, not green
             problems.append("NOT_ON of gtest_run.py cannot be read: %s" % exc)
     memo, rows = {}, []
@@ -428,7 +439,7 @@ def main(argv=None) -> int:
     ap.add_argument("--junit", help="the junit-* artifacts (node, py, xpcshell, cargo)")
     ap.add_argument("--gtest-filter", default=os.environ.get("GTEST_FILTER_INPUT", ""), help="the filter of this run's gtests")
     ap.add_argument("--gtests", default="true", help="'true' when this run ran the gtests")
-    ap.add_argument("--gtest-run", help="the gtest_run.py the gtest jobs ran (its NOT_ON); default: the one of the series this script lives in")
+    ap.add_argument("--gtest-run", help="the gtest_run.py the gtest jobs ran (its NOT_ON and NOT_ON_TESTS); default: the one of the series this script lives in")
     ap.add_argument("--min-named", type=int, default=1, help="fewer named tests than this is red")
     ap.add_argument("--summary", default=os.environ.get("GITHUB_STEP_SUMMARY", ""), help="where the table goes (the step summary)")
     ns = ap.parse_args(argv)

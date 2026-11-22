@@ -50,7 +50,7 @@ def junit(*cases) -> str:
 class Fake:
     """A series and the results of a run, in a temporary folder."""
 
-    def __init__(self, tmp: str, hooks: dict, gtest_linux=None, gtest_win=None, wrapper=None, node=None, extra_junit=None):
+    def __init__(self, tmp: str, hooks: dict, gtest_linux=None, gtest_win=None, wrapper=None, node=None, extra_junit=None, not_on_tests=None):
         self.root = Path(tmp)
         self.series = self.root / "series"
         self.series.mkdir()
@@ -60,7 +60,7 @@ class Fake:
             (self.series / folder / "HOOKS.json").write_text(json.dumps(entries), encoding="utf-8")
         # the table of platform-only suites is the gtest_run.py of the run: a stub of it here, so that no case depends on the table of the day
         self.gtest_run = self.root / "gtest_run.py"
-        self.gtest_run.write_text("NOT_ON = %r" % NOT_ON + chr(10), encoding="utf-8")
+        self.gtest_run.write_text("NOT_ON = %r" % NOT_ON + chr(10) + ("" if not_on_tests is None else "NOT_ON_TESTS = %r" % not_on_tests + chr(10)), encoding="utf-8")
         self.results, self.gtest, self.junit = self.root / "results", self.root / "gtest-reports", self.root / "junit"
         for leg, files in (("gtest-reports-linux-x86_64", gtest_linux), ("gtest-reports-win-x86_64", gtest_win)):
             if files is not None:
@@ -207,6 +207,42 @@ def cases() -> list:
         f = fake(tmp, {"fonts/x": [hook("gtest:StealthFontList.Lists")]}, gtest_linux=GOOD_GTEST, gtest_win={"StealthFontList.json": win_only})
         rows, problems, _ = f.run()
         add("judge: a suite that exists on Windows only is asked of the Windows leg only%s" % ("" if not problems else ": %s" % problems), not problems and rows[0][3] == "PASS")
+
+    # single tests that exist on one platform only inside a suite that exists on both (NOT_ON_TESTS of gtest_run.py)
+    one_side = ("StealthA", [("Does", "COMPLETED"), ("LinuxOnly", "COMPLETED")])
+    linux_json = {"StealthA.json": gtest_json(one_side)}
+    win_json = {"StealthA.json": gtest_json(("StealthA", [("Does", "COMPLETED")]))}
+    table = {"linux": set(), "win": {"StealthA.LinuxOnly"}}
+    with tempfile.TemporaryDirectory() as tmp:
+        f = fake(tmp, {"x": [hook("gtest:StealthA.LinuxOnly")]}, gtest_linux=linux_json, gtest_win=win_json, not_on_tests=table)
+        rows, problems, _ = f.run()
+        add("judge: a test listed in NOT_ON_TESTS for Windows is green when only the Linux report has it%s" % ("" if not problems else ": %s" % problems),
+            not problems and rows[0][3] == "PASS")
+    with tempfile.TemporaryDirectory() as tmp:
+        f = fake(tmp, {"x": [hook("gtest:StealthA.LinuxOnly")]}, gtest_linux=linux_json, gtest_win=win_json)
+        rows, problems, _ = f.run()
+        add("judge: a test missing from the Windows report and not in NOT_ON_TESTS stays red", red_on(rows, problems, "in no gtest report of the win leg"))
+    with tempfile.TemporaryDirectory() as tmp:
+        f = fake(tmp, {"x": [hook("gtest:StealthA.LinuxOnly")]}, gtest_linux=linux_json, gtest_win=win_json, not_on_tests={"linux": {"StealthA.Other"}, "win": {"StealthA.LinuxOnly"}})
+        rows, problems, _ = f.run()
+        add("judge: a table that lists other tests does not excuse this one on the other platform", not problems and rows[0][3] == "PASS")
+    with tempfile.TemporaryDirectory() as tmp:
+        f = fake(tmp, {"x": [hook("gtest:StealthA.LinuxOnly")]}, gtest_linux=linux_json, gtest_win=win_json, not_on_tests={"linux": {"StealthA.LinuxOnly"}, "win": {"StealthA.LinuxOnly"}})
+        rows, problems, _ = f.run()
+        add("judge: a test listed as not on Linux that ran on Linux is red", red_on(rows, problems, "listed as not on the linux leg"))
+    with tempfile.TemporaryDirectory() as tmp:
+        f = fake(tmp, {"x": [hook("gtest:StealthA.Does")]}, not_on_tests={"linux": set(), "win": {"StealthA.Does"}})
+        rows, problems, _ = f.run()
+        add("judge: a table entry for a test that is in the Windows report is red, even if the report is green", red_on(rows, problems, "listed as not on the win leg"))
+    with tempfile.TemporaryDirectory() as tmp:
+        f = fake(tmp, {"x": [hook("gtest:StealthA.Does")]}, gtest_linux={"StealthA.json": gtest_json(("StealthA", [("Other", "COMPLETED")]))},
+                 gtest_win={"StealthA.json": gtest_json(("StealthA", [("Other", "COMPLETED")]))}, not_on_tests={"linux": {"StealthA.Does"}, "win": {"StealthA.Does"}})
+        rows, problems, _ = f.run()
+        add("judge: a test listed as not on either platform is red", red_on(rows, problems, "exists on no platform"))
+    with tempfile.TemporaryDirectory() as tmp:
+        f = fake(tmp, {"x": [hook("gtest:StealthA.LinuxOnly")]}, gtest_linux=linux_json, gtest_win=win_json, not_on_tests=table)
+        done, summary = f.cli()
+        add("judge: the command exits 0 for a test that NOT_ON_TESTS puts on one platform", done.returncode == 0 and "GREEN" in summary)
 
     # node: the file is in the name of the junit, the title is in the testcase
     with tempfile.TemporaryDirectory() as tmp:
