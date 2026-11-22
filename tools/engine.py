@@ -71,6 +71,7 @@ INVENTORY = ROOT / "tools" / "inventory.json"
 UPSTREAM = ROOT / "UPSTREAM.json"
 BUDGET = ROOT / "tools" / "hook-budget.json"
 REMOVED_BUDGET = ROOT / "tools" / "removed-budget.json"
+REALIGN = ROOT / "tools" / "budget-realign-69.json"
 # The workflows live in the series (the tree's tests read them beside scripts/), and
 # GitHub runs them from this repository's root: export copies them there and check
 # requires the two identical. series.yml and noreply-identity.yml are the root's own.
@@ -968,8 +969,106 @@ def problems() -> list:
     return found
 
 
-def check(source: Path | None = None, tag: str | None = None) -> int:
+MAIN_REF = "refs/remotes/origin/main"
+
+
+def main_budget_text(name: str) -> str | None:
+    """tools/<name> as origin/main has it, never from the branch; None if main does not resolve."""
+    done = subprocess.run(["git", "-C", str(ROOT), "show", "origin/main:tools/" + name],
+                          capture_output=True)
+    return done.stdout.decode("utf-8") if done.returncode == 0 else None
+
+
+def load_main_budgets() -> tuple[dict, dict]:
+    """Main's hook and removed budgets. Fetches origin/main once if it is not there yet."""
+    texts = [main_budget_text("hook-budget.json"), main_budget_text("removed-budget.json")]
+    if None in texts:
+        subprocess.run(["git", "-C", str(ROOT), "fetch", "--no-tags", "--depth=1", "origin",
+                        "+refs/heads/main:" + MAIN_REF], capture_output=True)
+        texts = [main_budget_text("hook-budget.json"), main_budget_text("removed-budget.json")]
+    if None in texts:
+        raise SystemExit("cannot read main's budgets: fetch origin main")
+    return json.loads(texts[0]), json.loads(texts[1])
+
+
+def load_main_realign() -> list | None:
+    """The one-time realignment list as origin/main has it (never the branch's); None while main has
+    none yet. Call after load_main_budgets, which makes sure origin/main is there."""
+    text = main_budget_text("budget-realign-69.json")
+    return json.loads(text) if text is not None else None
+
+
+def realign_limits(rows) -> dict:
+    """{(file, kind): line} of the rows of a realignment list."""
+    return {(r["file"], r["kind"]): r["line"] for r in rows or ()}
+
+
+def realign_list_problems(rows: list, main_rows: list | None) -> list:
+    """The realignment list only shrinks: against main's list, a row added or a value raised fails.
+    While main has no list yet (main_rows is None) the list is being introduced and is main's to review."""
+    if main_rows is None:
+        return []
+    found = []
+    now = realign_limits(main_rows)
+    for r in rows:
+        key = (r["file"], r["kind"])
+        if key not in now:
+            found.append("%s: a row of tools/budget-realign-69.json (%s) that main's list does not have: "
+                         "the list only shrinks" % (r["file"], r["kind"]))
+        elif r["line"] > now[key]:
+            found.append("%s: tools/budget-realign-69.json %s value %d is above main's %d: the list only "
+                         "shrinks" % (r["file"], r["kind"], r["line"], now[key]))
+    return found
+
+
+def budget_raise_problems(hook: dict, removed: dict, main_hook: dict, main_removed: dict,
+                          realign: list | None = None) -> list:
+    """Budgets only go down: a value above main's, or a new file's hook above 5 lines, is a failure.
+    realign is MAIN's one-time realignment list: a file in it may reach its `line` value, no more; once
+    main's own budget has reached that value the row has been consumed and main's value is the limit."""
+    limits = realign_limits(realign)
+    found = []
+    for path, n in sorted(hook.items()):
+        if path in main_hook:
+            limit, what = main_hook[path], "main's %d" % main_hook[path]
+        else:
+            limit, what = 5, "5"
+        if (path, "hook") in limits and limits[(path, "hook")] > limit:
+            limit, what = limits[(path, "hook")], "the realigned %d" % limits[(path, "hook")]
+        if n > limit:
+            if path in main_hook or what != "5":
+                found.append("%s: hook budget %d is above %s: budgets only go down, move the "
+                             "logic into our files" % (path, n, what))
+            else:
+                found.append("%s: hook budget %d for a file new to the series: a new hook is at most 5 "
+                             "lines" % (path, n))
+    for path, n in sorted(removed.items()):
+        if path in main_hook:
+            limit, what = main_removed.get(path, 0), "main's %d" % main_removed.get(path, 0)
+        else:
+            limit, what = 5, "5"
+        if (path, "removed") in limits and limits[(path, "removed")] > limit:
+            limit, what = limits[(path, "removed")], "the realigned %d" % limits[(path, "removed")]
+        if n > limit:
+            if path in main_hook or what != "5":
+                found.append("%s: removed budget %d is above %s: budgets only go down, leave "
+                             "Mozilla's lines as they are" % (path, n, what))
+            else:
+                found.append("%s: removed budget %d for a file new to the series: at most 5 of Mozilla's "
+                             "lines, leave the rest as they are" % (path, n))
+    return found
+
+
+def check(source: Path | None = None, tag: str | None = None, against_main: bool = False) -> int:
     found = problems()
+    if against_main:      # the CLI does; it needs git and origin/main, problems() and the tests' fakes do not
+        main_hook, main_removed = load_main_budgets()
+        main_realign = load_main_realign()
+        found += budget_raise_problems(json.loads(BUDGET.read_text(encoding="utf-8")),
+                                       json.loads(REMOVED_BUDGET.read_text(encoding="utf-8")),
+                                       main_hook, main_removed, main_realign)
+        found += realign_list_problems(json.loads(REALIGN.read_text(encoding="utf-8")) if REALIGN.is_file() else [],
+                                       main_realign)
     if source is not None and tag:
         found += backport_in_tag_problems(source, tag)
     for p in found:
@@ -1046,7 +1145,7 @@ def main() -> int:
         apply(a.source, base, head, a.force)
         return 0
     if a.command == "check":
-        return check(a.source, a.against) if a.against else check()
+        return check(a.source, a.against or None, against_main=True)
     if a.command == "shrink-budget":
         shrink_budget()
         return 0
