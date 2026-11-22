@@ -34,7 +34,9 @@ check    needs no Firefox: SERIES lists exactly the folders that exist, every fo
          hooks.patch touches only the Mozilla files its MANIFEST owns, and no Mozilla file
          carries more of our lines than tools/hook-budget.json allows, nor loses or has
          rewritten more of its own lines than tools/removed-budget.json allows. Both
-         budgets only go down: logic belongs in our own files, Mozilla's files get hooks,
+         budgets only go down (a hook budget goes above main's only with the row the branch adds to
+         tools/hook-budget-raises.json, a register that only grows: from main's budget to the new one,
+         with its folder, reason, who decided, date and test): logic belongs in our own files, Mozilla's files get hooks,
          and Mozilla's lines stay as Mozilla wrote them (a removed or rewritten line
          conflicts at a port like an added one, and a copy of it in a file of ours
          stops following Mozilla). A Mozilla file outside vendored code can be a backport (category
@@ -72,6 +74,9 @@ UPSTREAM = ROOT / "UPSTREAM.json"
 BUDGET = ROOT / "tools" / "hook-budget.json"
 REMOVED_BUDGET = ROOT / "tools" / "removed-budget.json"
 REALIGN = ROOT / "tools" / "budget-realign-69.json"
+# Declared raises of a hook budget above main's (a hook that is a wanted growth, decided by the pm):
+# the register only grows, and a branch raises a budget only with the row it adds (budget_raise_problems).
+RAISES = ROOT / "tools" / "hook-budget-raises.json"
 # The workflows live in the series (the tree's tests read them beside scripts/), and
 # GitHub runs them from this repository's root: export copies them there and check
 # requires the two identical. series.yml and noreply-identity.yml are the root's own.
@@ -1021,13 +1026,74 @@ def realign_list_problems(rows: list, main_rows: list | None) -> list:
     return found
 
 
+RAISE_FIELDS = ("file", "from", "to", "folder", "reason", "decided_by", "date", "test")
+
+
+def load_main_raises() -> list | None:
+    """The register of declared hook budget raises as origin/main has it (never the branch's); None while
+    main has none yet. Call after load_main_budgets, which makes sure origin/main is there."""
+    text = main_budget_text("hook-budget-raises.json")
+    return json.loads(text) if text is not None else None
+
+
+def raises_list_problems(rows: list, main_rows: list | None) -> list:
+    """tools/hook-budget-raises.json only grows: every row of main's register is on the branch as main has
+    it (none removed, none changed), and every row has its eight fields, `from` and `to` whole numbers with
+    `to` above `from`, the others text that is not empty, `date` as YYYY-MM-DD."""
+    found = []
+    for r in rows:
+        name = r.get("file") if isinstance(r, dict) else None
+        if not isinstance(r, dict) or set(r) != set(RAISE_FIELDS):
+            found.append("tools/hook-budget-raises.json: a row of %s does not have exactly the fields %s"
+                         % (name or "no file", ", ".join(RAISE_FIELDS)))
+            continue
+        if not all(isinstance(r[k], str) and r[k].strip() for k in RAISE_FIELDS if k not in ("from", "to")):
+            found.append("tools/hook-budget-raises.json: the row of %s has an empty field: file, folder, reason, "
+                         "decided_by, date and test are all said" % name)
+        elif not re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["date"]):
+            found.append("tools/hook-budget-raises.json: the row of %s has the date %r, not YYYY-MM-DD" % (name, r["date"]))
+        if not (type(r["from"]) is int and type(r["to"]) is int and 0 <= r["from"] < r["to"]):
+            found.append("tools/hook-budget-raises.json: the row of %s raises from %r to %r: two whole numbers, "
+                         "`to` above `from`" % (name, r["from"], r["to"]))
+    for m in main_rows or ():
+        if m not in rows:
+            found.append("tools/hook-budget-raises.json: main's row of %s (%r to %r) is gone or changed: the "
+                         "register only grows" % (m.get("file"), m.get("from"), m.get("to")))
+    return found
+
+
+def new_raise_rows(rows: list, main_rows: list | None) -> list:
+    """The rows of the branch's register that main's does not have: the raises this branch declares. While
+    main has no register (None) nothing can be declared: the door must be on main before it is used."""
+    if main_rows is None:
+        return []
+    return [r for r in rows if r not in main_rows]
+
+
 def budget_raise_problems(hook: dict, removed: dict, main_hook: dict, main_removed: dict,
-                          realign: list | None = None) -> list:
+                          realign: list | None = None, raises: list | None = None) -> list:
     """Budgets only go down: a value above main's, or a new file's hook above 5 lines, is a failure.
     realign is MAIN's one-time realignment list: a file in it may reach its `line` value, no more; once
-    main's own budget has reached that value the row has been consumed and main's value is the limit."""
+    main's own budget has reached that value the row has been consumed and main's value is the limit.
+    raises are the rows the branch ADDS to tools/hook-budget-raises.json (new_raise_rows): a hook budget
+    of a file main patches may go above main's only with one such row, `from` main's budget and `to` the
+    branch's; a row that raises nothing, or one of a file main does not patch, is a failure too."""
     limits = realign_limits(realign)
     found = []
+    declared = {}
+    for r in raises or ():
+        path = r.get("file")
+        if path in declared:
+            found.append("%s: two rows in tools/hook-budget-raises.json: one raise per file and branch" % path)
+            continue
+        declared[path] = r
+        if path not in main_hook:
+            found.append("%s: a row in tools/hook-budget-raises.json for a file main does not patch: a new file "
+                         "has its 5 lines, no raise" % path)
+        elif r.get("from") != main_hook[path] or r.get("to") != hook.get(path):
+            found.append("%s: tools/hook-budget-raises.json raises from %r to %r, but main's budget is %d and the "
+                         "branch's %s: `from` is main's, `to` the new one" % (path, r.get("from"), r.get("to"),
+                                                                             main_hook[path], hook.get(path)))
     for path, n in sorted(hook.items()):
         if path in main_hook:
             limit, what = main_hook[path], "main's %d" % main_hook[path]
@@ -1035,6 +1101,8 @@ def budget_raise_problems(hook: dict, removed: dict, main_hook: dict, main_remov
             limit, what = 5, "5"
         if (path, "hook") in limits and limits[(path, "hook")] > limit:
             limit, what = limits[(path, "hook")], "the realigned %d" % limits[(path, "hook")]
+        if n > limit and path in declared:
+            continue          # declared: its row is judged above
         if n > limit:
             if path in main_hook or what != "5":
                 found.append("%s: hook budget %d is above %s: budgets only go down, move the "
@@ -1064,9 +1132,12 @@ def check(source: Path | None = None, tag: str | None = None, against_main: bool
     if against_main:      # the CLI does; it needs git and origin/main, problems() and the tests' fakes do not
         main_hook, main_removed = load_main_budgets()
         main_realign = load_main_realign()
+        main_raises = load_main_raises()
+        raises = json.loads(RAISES.read_text(encoding="utf-8")) if RAISES.is_file() else []
+        found += raises_list_problems(raises, main_raises)
         found += budget_raise_problems(json.loads(BUDGET.read_text(encoding="utf-8")),
                                        json.loads(REMOVED_BUDGET.read_text(encoding="utf-8")),
-                                       main_hook, main_removed, main_realign)
+                                       main_hook, main_removed, main_realign, new_raise_rows(raises, main_raises))
         found += realign_list_problems(json.loads(REALIGN.read_text(encoding="utf-8")) if REALIGN.is_file() else [],
                                        main_realign)
     if source is not None and tag:
