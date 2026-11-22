@@ -8,5 +8,15 @@
   "decided_by": "Federico 22/11 (le correzioni del motore per gli intermittenti entrano nella 69); disegno e diff letti dal pm",
   "date": "2026-11-22",
   "test": "wrapper:tests/test_a_navigation_that_moved_is_told_by_the_engine_e2e.py::test_a_cross_site_goto_is_told_moved_by_the_engine_with_the_process_it_left"
+ },
+ {
+  "file": "toolkit/xre/nsAppRunner.cpp",
+  "from": 4,
+  "to": 6,
+  "folder": "platform/declaration-gate",
+  "reason": "il segnale «le pref del profilo sono state lette», subito dopo InitializeUserPrefs: prima di esso la dichiarazione non si legge, quindi su Linux nessuna sonda GL dell'host e GfxInfo senza l'host; dopo, decide il motore (non dichiarato: la sonda di Mozilla, regressione WebGL della 69 col motore spento)",
+  "decided_by": "pm 22/11 (disegno della correzione glxtest, finestra chiusa per costruzione)",
+  "date": "2026-11-22",
+  "test": "gtest:StealthGfxFeatureStatus.NothingProbesTheHostBeforeTheProfilePrefsAreRead"
  }
 ]
