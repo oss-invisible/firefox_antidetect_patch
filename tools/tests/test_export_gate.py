@@ -26,10 +26,17 @@ def test_the_export_of_the_command_line_goes_through_the_gate_before_it_writes()
 
 def test_a_machine_without_node_refuses_the_export(monkeypatch):
     monkeypatch.delenv("ENGINE_NODE", raising=False)
-    monkeypatch.setattr(export_gate, "PORTABLE_NODE", "C:/no/such/node.exe")
     monkeypatch.setattr(export_gate.shutil, "which", lambda name: None)
     with pytest.raises(SystemExit, match="no Node"):
         export_gate.node_binary()
+
+
+def test_node_comes_from_engine_node_before_the_path(monkeypatch, tmp_path):
+    fake = tmp_path / "node.exe"
+    fake.write_text("", encoding="utf-8")
+    monkeypatch.setenv("ENGINE_NODE", str(fake))
+    monkeypatch.setattr(export_gate.shutil, "which", lambda name: None)
+    assert export_gate.node_binary() == str(fake)
 
 
 def test_a_failing_node_test_is_named(monkeypatch, tmp_path):
@@ -60,6 +67,7 @@ def test_a_tree_that_is_not_whole_is_refused(monkeypatch, tmp_path):
 
 
 def test_a_red_gate_stops_the_export(monkeypatch):
+    monkeypatch.setenv("ENGINE_NODE_GATE_TREE", "tree")
     monkeypatch.setattr(export_gate, "node_binary", lambda: "node")
     monkeypatch.setattr(export_gate, "prepare_tree", lambda source, head: Path("tree"))
     monkeypatch.setattr(export_gate, "run_node_tests", lambda tree, node: ["a node test is red"])

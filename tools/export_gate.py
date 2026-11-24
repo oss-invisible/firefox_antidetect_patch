@@ -9,10 +9,10 @@ WHOLE tree of the head it is about to export, the same tests the build job runs,
   * the python tests of ours in the engine tree that are plain scripts (modules/libpref/test/test_stealth_*.py);
   * the tests of the series itself (tools/tests), with pytest.
 
-The tree is a git worktree of the source repository, at ENGINE_NODE_GATE_TREE (default C:/ff/wt/node-gate), moved to the head by a
-checkout (the first time it is made it writes the whole tree, a quarter of an hour; after that only what differs). Node is the one
-in ENGINE_NODE, else the portable one of this PC, else the one on the PATH; with none the export refuses (a gate that cannot run is
-not a pass). There is no switch to skip it.
+The tree is a git worktree of the source repository, at the path in ENGINE_NODE_GATE_TREE (no default: unset, the export refuses),
+moved to the head by a checkout (the first time it is made it writes the whole tree, a quarter of an hour; after that only what
+differs). Node is the one in ENGINE_NODE, else the one on the PATH; with none the export refuses (a gate that cannot run is not a
+pass). There is no switch to skip it.
 """
 from __future__ import annotations
 
@@ -24,16 +24,22 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TREE = Path(os.environ.get("ENGINE_NODE_GATE_TREE", "C:/ff/wt/node-gate"))
-PORTABLE_NODE = "C:/Users/feder/ext/tetra-run/node/node-v26.13.0-win-x64/node.exe"
+
+
+def gate_tree() -> Path:
+    value = os.environ.get("ENGINE_NODE_GATE_TREE")
+    if not value:
+        raise SystemExit("export refused: the whole tree for the node tests is not named: set ENGINE_NODE_GATE_TREE to the path of "
+                         "a worktree of the source repository (it is made there the first time)")
+    return Path(value)
 
 
 def node_binary() -> str:
-    for candidate in (os.environ.get("ENGINE_NODE"), PORTABLE_NODE, shutil.which("node")):
+    for candidate in (os.environ.get("ENGINE_NODE"), shutil.which("node")):
         if candidate and Path(candidate).is_file():
             return str(candidate)
-    raise SystemExit("export refused: there is no Node on this machine (ENGINE_NODE, %s, or node on the PATH), so the Juggler's "
-                     "node tests cannot run, and the build job would be the first to run them" % PORTABLE_NODE)
+    raise SystemExit("export refused: there is no Node on this machine (ENGINE_NODE, or node on the PATH), so the Juggler's "
+                     "node tests cannot run, and the build job would be the first to run them")
 
 
 def git(*args: str, cwd: Path | None = None) -> str:
@@ -43,8 +49,9 @@ def git(*args: str, cwd: Path | None = None) -> str:
     return done.stdout.strip()
 
 
-def prepare_tree(source: Path, head: str, tree: Path = TREE) -> Path:
+def prepare_tree(source: Path, head: str, tree: Path | None = None) -> Path:
     """The whole tree of `head`, in a worktree of the source repository."""
+    tree = tree or gate_tree()
     sha = git("-C", str(source), "rev-parse", head)
     if not (tree / ".git").exists():
         print("export gate: making the whole tree of the node tests in %s (the first time takes a quarter of an hour)" % tree)
@@ -95,6 +102,7 @@ def run_series_tests() -> list:
 
 def gate(source: Path, head: str) -> None:
     """Nothing is returned: the export goes on, or this exits saying which test is red."""
+    gate_tree()          # refuses, naming the variable, before anything else is looked at
     node = node_binary()
     tree = prepare_tree(source, head)
     problems = run_node_tests(tree, node) + run_tree_python_tests(tree) + run_series_tests()

@@ -1,7 +1,9 @@
 """Pre-build static checks of the engine tree: the questions a failed build answers an hour later,
 answered in seconds from git objects, with no checkout and no compiler.
 
-    python tools/prebuild.py --source C:/ff/source --head <branch> [--base <branch>] [--folder <f> ...] [--json out.json]
+    python tools/prebuild.py --source <path> --head <branch> [--base <branch>] [--folder <f> ...] [--json out.json]
+
+--source is the Firefox repository; it may be given by the environment variable FIREFOX_SOURCE instead, and has no default.
 
 Reads the tree of --head (and the Mozilla tag of UPSTREAM.json, and --base when given) straight from the
 objects of the source repository. A line per problem, the style of `engine.py check`:
@@ -1754,7 +1756,8 @@ def report(res: dict, proj: Project, checks) -> str:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     up = json.loads((ROOT / "UPSTREAM.json").read_text(encoding="utf-8"))
-    ap.add_argument("--source", default=os.environ.get("ENGINE_SOURCE", "C:/ff/source"), help="the Firefox repository (read only)")
+    ap.add_argument("--source", default=os.environ.get("FIREFOX_SOURCE") or None,
+                    help="the Firefox repository (read only); or the environment variable FIREFOX_SOURCE; no default")
     ap.add_argument("--head", default=up["source_branch"], help="the source branch to check")
     ap.add_argument("--base", help="the source branch before the rework (checks 4, 5 and 8)")
     ap.add_argument("--tag", help="the Mozilla tag (default: UPSTREAM.json)")
@@ -1764,6 +1767,8 @@ def main(argv=None) -> int:
     ap.add_argument("--checks", default="1,2,3,4,5,6,7", help="which checks, e.g. 1,3 (8 is only run when asked for)")
     ap.add_argument("--json", type=Path, help="write the findings, the Mozilla lines and the per-file classes here")
     a = ap.parse_args(argv)
+    if not a.source:
+        raise SystemExit("prebuild needs the source repository: pass --source <path> or set FIREFOX_SOURCE")
     tag = a.tag or up["mozilla_tag"]
     checks = tuple(int(x) for x in a.checks.split(","))
     t0 = time.time()

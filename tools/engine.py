@@ -19,8 +19,9 @@
                                               tools/birth-ledger.json (tools/births.py says how)
 
 The Mozilla tag, the source branch and the commit last exported are in UPSTREAM.json;
---source / --base / --head override them (the source repository defaults to
-C:/ff/source, or $ENGINE_SOURCE).
+--base / --head override them. The source repository has no default: the commands that read
+it (status, apply, export, verify, drift, port, check --against) take --source <path> or the
+environment variable FIREFOX_SOURCE, and stop with a message when neither is given.
 
 export   writes one folder per feature (tools/layout.py says which):
            hooks.patch    our changes to Mozilla's files, as a git diff against the tag
@@ -1341,6 +1342,9 @@ def status(source: Path, head: str) -> int:
     return 1
 
 
+SOURCE_COMMANDS = ("status", "apply", "export", "verify", "drift", "port")     # check needs it only with --against
+
+
 def main() -> int:
     if len(sys.argv) > 1 and sys.argv[1] == "births":
         return births.main(sys.argv[2:])      # its own options: --tree, --repo/--rev, --skeleton, --accept-changed, --prune, --tsv
@@ -1355,7 +1359,8 @@ def main() -> int:
     ap.add_argument("--shared", type=Path, default=None,
                     help="materialize: a directory every leg of this machine reaches; the tag is fetched "
                          "and the series applied there once, and each leg borrows the objects")
-    ap.add_argument("--source", type=Path, default=Path(os.environ.get("ENGINE_SOURCE", "C:/ff/source")))
+    ap.add_argument("--source", type=Path, default=Path(os.environ["FIREFOX_SOURCE"]) if os.environ.get("FIREFOX_SOURCE") else None,
+                    help="the Firefox source repository (or the environment variable FIREFOX_SOURCE); no default")
     ap.add_argument("--against", help="check: also try the backports of Mozilla commits against this tag, "
                                       "found in --source (a port does it by itself)")
     ap.add_argument("--init", action="store_true", help="hook-debt: write the list from every violation of now (once)")
@@ -1366,6 +1371,9 @@ def main() -> int:
     a = ap.parse_args()
     up = upstream()
     base, head = a.base or up["mozilla_tag"], a.head or up["source_branch"]
+    if a.command in SOURCE_COMMANDS or (a.command == "check" and a.against):
+        if a.source is None:
+            raise SystemExit("%s needs the source repository: pass --source <path> or set FIREFOX_SOURCE" % a.command)
     if a.command in ("drift", "port"):
         if not a.to:
             raise SystemExit("%s needs --to <Mozilla tag>" % a.command)
