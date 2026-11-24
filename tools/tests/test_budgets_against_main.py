@@ -188,11 +188,28 @@ def test_a_row_with_an_empty_or_missing_field_or_a_bad_value_fails():
         assert any("two whole numbers" in p for p in found), (frm, to, found)
 
 
-def test_a_row_of_main_removed_or_changed_fails():
+def test_a_row_of_main_removed_fails():
     found = _raised({"a/A.cpp": 4}, [], [RAISE])
     assert len(found) == 1 and "gone or changed" in found[0], found
-    found = _raised({"a/A.cpp": 4}, [dict(RAISE, reason="another")], [RAISE])
-    assert any("gone or changed" in p for p in found), found
+
+
+def test_a_row_of_main_with_another_enforcing_field_fails():
+    # fails on the old code too (a changed row was "gone or changed"); here it must stay red
+    for field, value in (("from", 3), ("to", 7), ("file", "b/B.cpp"), ("folder", "f/y"),
+                         ("date", "2026-11-23"), ("test", "wrapper:tests/test_c.py::test_d")):
+        found = engine.raises_list_problems([dict(RAISE, **{field: value})], [RAISE])
+        assert any("gone or changed" in p for p in found), (field, found)
+
+
+def test_a_row_of_main_with_other_free_text_is_green():
+    # fails on the old code: the reworded row was "gone or changed" and, as a new row, "raises from"
+    for field in engine.RAISE_TEXT_FIELDS:
+        row = dict(RAISE, **{field: "the same decision, in English"})
+        assert _raised({"a/A.cpp": 4}, [row], [RAISE]) == [], field
+        assert engine.new_raise_rows([row], [RAISE]) == [], field
+        # a lowered budget and a reworded row together stay green; a raise still needs its own new row
+        found = _raised({"a/A.cpp": 6}, [row], [RAISE])
+        assert len(found) == 1 and "above main's 4" in found[0], (field, found)
 
 
 def test_a_row_main_already_has_opens_nothing_on_the_branch():

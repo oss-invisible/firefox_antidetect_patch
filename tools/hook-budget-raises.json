@@ -4,8 +4,8 @@
   "from": 1,
   "to": 4,
   "folder": "automation/navigation",
-  "reason": "goto abortito a torto per un documento che fa il commit (intermittente della 68): notifica della decisione di cambio processo",
-  "decided_by": "Federico 22/11 (le correzioni del motore per gli intermittenti entrano nella 69); disegno e diff letti dal pm",
+  "reason": "goto aborted wrongly for a document that commits (intermittent of 68): notification of the process-switch decision",
+  "decided_by": "the owner 22/11 (the engine fixes for the intermittents go into 69); design and diff read by the owner",
   "date": "2026-11-22",
   "test": "wrapper:tests/test_a_navigation_that_moved_is_told_by_the_engine_e2e.py::test_a_cross_site_goto_is_told_moved_by_the_engine_with_the_process_it_left"
  },
@@ -14,8 +14,8 @@
   "from": 4,
   "to": 6,
   "folder": "platform/declaration-gate",
-  "reason": "il segnale «le pref del profilo sono state lette», subito dopo InitializeUserPrefs: prima di esso la dichiarazione non si legge, quindi su Linux nessuna sonda GL dell'host e GfxInfo senza l'host; dopo, decide il motore (non dichiarato: la sonda di Mozilla, regressione WebGL della 69 col motore spento)",
-  "decided_by": "pm 22/11 (disegno della correzione glxtest, finestra chiusa per costruzione)",
+  "reason": "the signal \"the profile prefs have been read\", right after InitializeUserPrefs: before it the declaration cannot be read, so on Linux no GL probe of the host and GfxInfo without the host; after it, the engine decides (not declared: Mozilla's probe, WebGL regression of 69 with the engine off)",
+  "decided_by": "the owner 22/11 (design of the glxtest fix, window closed by construction)",
   "date": "2026-11-22",
   "test": "gtest:StealthGfxFeatureStatus.NothingProbesTheHostBeforeTheProfilePrefsAreRead"
  },
@@ -24,8 +24,8 @@
   "from": 6,
   "to": 7,
   "folder": "platform/declaration-gate",
-  "reason": "la sonda GL di Mozilla a motore spento torna a partire presto, dopo la lettura delle preferenze: regressione della correzione a37f10c1ee, WebGL bloccato sotto carico (gate-only 45206303882)",
-  "decided_by": "pm",
+  "reason": "Mozilla's GL probe with the engine off starts early again, after the prefs are read: regression of fix a37f10c1ee, WebGL blocked under load (gate-only 45206303882)",
+  "decided_by": "the owner",
   "date": "2026-11-23",
   "test": "gtest:StealthGfxFeatureStatus.TheHostProbeIsLaunchedAsSoonAsThePrefsAreReadWithTheEngineOff"
  },
@@ -34,8 +34,8 @@
   "from": 1,
   "to": 2,
   "folder": "platform/declaration-gate",
-  "reason": "la sonda GL di Mozilla a motore spento torna a partire presto, dopo la lettura delle preferenze: regressione della correzione a37f10c1ee, WebGL bloccato sotto carico (gate-only 45206303882)",
-  "decided_by": "pm",
+  "reason": "Mozilla's GL probe with the engine off starts early again, after the prefs are read: regression of fix a37f10c1ee, WebGL blocked under load (gate-only 45206303882)",
+  "decided_by": "the owner",
   "date": "2026-11-23",
   "test": "gtest:StealthGfxFeatureStatus.TheHostProbeIsLaunchedAsSoonAsThePrefsAreReadWithTheEngineOff"
  }

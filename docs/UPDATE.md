@@ -131,7 +131,9 @@ python tools/births.py --repo <source> --rev port/$NEW
 | `GONE` | A ledger entry with no site | `--prune` |
 | `INVALID` | An entry that breaks the grammar, or a `hooked` verdict whose hook is gone | Fix the entry or restore the hook |
 
-Set `tag` in the ledger to `NEW`. Exit 0 is clean, 1 is a problem, 2 means only open items (`fix`) remain. `series.yml` runs it only on pull requests and pushes to `main`, so run it now: `port` ran it on a branch that still had conflict markers.
+Set `tag` in the ledger to `NEW`. Exit 0 is clean, 1 is a problem, 2 means only open items (`fix`) remain. `port` ran it on a branch that still had conflict markers, so run it now.
+
+`series.yml` runs `births.py` (job `rebuilds`) only on pull requests and pushes to `main`. The ledger must be green before the series pull request is opened, or the pull request is red.
 
 ## 8. The compile-only candidate
 
@@ -179,7 +181,7 @@ The series is the retail of the new version. Each of these is a value measured o
 | Media decode and encode answers, WebRTC codecs, system colours | the core's data | `decodingInfo` for the codecs the core declares, and the system colour keywords, on the retail |
 | `tag` of the birth ledger | `tools/birth-ledger.json` | Set by hand (step 7) |
 
-## 11. Full candidate, merge, release
+## 11. Full candidate, release, merge
 
 On the `latitude/<name>` branch, the whole run, with the gtests:
 
@@ -187,17 +189,44 @@ On the `latitude/<name>` branch, the whole run, with the gtests:
 gh workflow run release.yml --ref latitude/<name> -f kind=candidate -f core_ref=<core branch> -f wrapper_ref=<wrapper ref> -f gtests=true
 ```
 
-It builds both legs, runs the gtests (the default `gtest_filter` is every suite of ours), the retail parity checks of step 10 and the drive gate with the core and the wrapper you named. It publishes nothing: the gate seals the binary with a local seal named `firefox-<R>-candidate`. Every red is read; a red that depends on the binary is fixed in the engine, one that does not, where it is.
+It builds both legs, runs the gtests (the default `gtest_filter` is every suite of ours), the retail parity checks of step 10, the drive gate with the core and the wrapper you named, and the named hook tests. It publishes nothing: the gate seals the binary with a local seal named `firefox-<R>-candidate`. Every red is read; a red that depends on the binary is fixed in the engine, one that does not, where it is. The run id is in the run's URL. Its `asset-*` archives are kept 7 days.
 
-Then merge: a pull request from the series branch into `main`, with `series.yml` green (its `gate` job requires `rules`, `rebuilds` and `noreply-identity`). A push to `main` also starts a candidate with the gtests.
+After a green full candidate, the release is published from that candidate's build, with no second build. Dispatch `republish.yml` from the same branch, at the commit the candidate built:
 
-The release runs only from `main`, never from a tag:
+```
+gh workflow run republish.yml --ref latitude/<name> -f build_run_id=<candidate run id> -f release_tag=firefox-<R> -f wrapper_ref=<sha> -f core_ref=<sha>
+```
+
+It checks the tag, runs the gate again on the candidate's archives with the refs you give (the gate includes `package-ab`), and creates the draft release `firefox-<R>` with the archives, `checksums.txt`, `source-commit.txt`, `series-commit.txt` and `seal.json`. The gtests and the named hook tests are the candidate's own: this workflow does not run them. The `series_commit` of the seal is the commit the candidate built (`series-commit.txt` of its run). `wrapper_ref` and `core_ref` default to `main`.
+
+Check the draft before anything else. A draft is not visible to `gh release download`: read its assets by id through the API.
+
+```
+gh api repos/oss-invisible/firefox_antidetect_patch/releases --jq '.[] | select(.draft and .tag_name=="firefox-<R>") | .assets[] | "\(.id) \(.name)"'
+gh api -H "Accept: application/octet-stream" repos/oss-invisible/firefox_antidetect_patch/releases/assets/<id> > seal.json
+gh api -H "Accept: application/octet-stream" repos/oss-invisible/firefox_antidetect_patch/releases/assets/<id> > checksums.txt
+gh api repos/oss-invisible/firefox_antidetect_patch/actions/runs/<candidate run id> --jq .head_sha
+```
+
+For each name in `assets` of `seal.json`, its `sha256` must be the one in `checksums.txt`; `series_commit` must be the `head_sha` of the candidate run.
+
+Then merge: a pull request from the series branch into `main`, with `series.yml` green (its `gate` job requires `rules`, `rebuilds` and `noreply-identity`). Merge it with a merge commit, never a squash or a rebase: `series_commit` of the seal must stay reachable from `main`. `package-ab` of the next candidate fetches the `series_commit` of the published seal by its sha, and `tools/engine.py apply` rebuilds the engine commit from it. A push to `main` also starts a candidate with the gtests; when a green run has built the same tree, it gates those bytes again instead of compiling (`scripts/ci/reuse_run.py`).
+
+Then publish the draft, with its tag on the merge commit:
+
+```
+gh release edit firefox-<R> --target <merge commit> --draft=false
+```
+
+Copy `seal.json` of that release into the core (step 9), remove the core's engine declaration file, and release the core and the wrapper against it.
+
+The other path is `kind=release` from `main`, which builds again and does not reuse the candidate's build:
 
 ```
 gh workflow run release.yml --ref main -f kind=release -f release_tag=firefox-<R>
 ```
 
-It builds, gates, makes `seal.json` and the draft release `firefox-<R>`. Copy that `seal.json` into the core (step 9), remove the core's engine declaration file, and release the core and the wrapper against it.
+It builds, gates, runs the gtests and the named hook tests when they are on, and makes `seal.json` and the draft `firefox-<R>`, as above. The release runs only from `main`, never from a tag.
 
 ## 12. Close
 
