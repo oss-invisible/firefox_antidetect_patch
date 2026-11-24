@@ -210,13 +210,13 @@ selects the charmap, so the faces are the same.
 
 The comment that stood on the constructor, kept unchanged:
 
-STEALTH: i byte appartengono a QUALCUN ALTRO e non vanno liberati qui.
+STEALTH: the bytes belong to SOMEONE ELSE and must not be freed here.
 
-Simmetrico al costruttore in prestito di `gfxDWriteFontFileStream` (§5.2l): su ENTRAMBE le piattaforme una sola
-mappatura per FILE viene prestata a tutte le facce di quel file, invece di una copia per faccia. Il prestito e'
-sicuro per la stessa ragione di la': la cache di `StealthBundleFontList` e' immortale per costruzione - l'oggetto
-e' volutamente leaked e non svuota mai `mFileCache` - e il valore della mappa e' un `RefPtr`, quindi se la tabella
-hash rialloca a spostarsi e' il puntatore e mai i byte.
+Symmetric to the borrowing constructor of `gfxDWriteFontFileStream`: on BOTH platforms a single mapping per FILE is
+lent to all the faces of that file, instead of one copy per face. The loan is safe for the same reason as there: the
+cache of `StealthBundleFontList` is immortal by construction - the object is deliberately leaked and never empties
+`mFileCache` - and the value of the map is a `RefPtr`, so if the hash table reallocates, it is the pointer that
+moves and never the bytes.
 
 The destructor of Mozilla's class calls `free()` on what `StealthFontDataOwned` returns: null for a borrowed
 FontData (a no-op), the pointer for an owning one. The `friend` gives the function access to `mBorrowed`; it is
@@ -228,18 +228,18 @@ Mozilla's constructor leaves it at its default (false).
 Hook: the guard `StealthGetSeededDescriptor` as the first statement. The comment that stood on the old block,
 moved here:
 
-STEALTH: se il percorso e' DICHIARATO, si usa quello e si salta il resto.
+STEALTH: if the path is DECLARED, use it and skip the rest.
 
-La guardia `!mFont` che segue, in `GetFontDescriptor`, e' un PROXY: "non e' un font di sistema" sta per "non ha un
-file", e il commento al punto di costruzione lo dice esplicitamente ("this signals whether or not we can safely
-query a descriptor"). Per un font scaricato da una pagina e' corretto, perche' li' un file non esiste. Per le
-nostre facce imbarcate e' falso: il file esiste e lo conosciamo, e tacerlo fa mandare a WebRender i BYTE del font
-invece del percorso. Misurati 65,9 MB nel processo padre su Linux, dove la stessa correzione e' stata fatta per
-prima - `70-known-bugs.md` [B154].
+The `!mFont` guard that follows, in `GetFontDescriptor`, is a PROXY: "it is not a system font" stands for "it has
+no file", and the comment at the construction site says so explicitly ("this signals whether or not we can safely
+query a descriptor"). For a font downloaded by a page this is correct, because there a file does not exist. For
+our bundled faces it is false: the file exists and we know it, and keeping silent about it makes WebRender receive
+the BYTES of the font instead of the path. Measured 65.9 MB in the parent process on Linux, where the same
+correction was made first - known bug B154.
 
-Non si passa da `GetFontFileName` perche' quella pretende un `IDWriteLocalFontFileLoader`, e il nostro caricatore
-presta byte in memoria: non e' locale e non lo sara'. La convenzione dei byte e' la stessa che usa lei, terminatore
-nullo compreso (`mFontFileName` e' il suo posto).
+We do not go through `GetFontFileName` because it requires an `IDWriteLocalFontFileLoader`, and our loader lends
+bytes in memory: it is not local and never will be. The byte convention is the same one it uses, null terminator
+included (`mFontFileName` is its place).
 
 ## gfx/2d/UnscaledFontDWrite.h: the seeded file name
 
@@ -251,15 +251,15 @@ terminator), so the descriptor callback gets the same bytes. Mozilla's two-argum
 `ScaledFontDWrite.cpp` and `Moz2DImageRenderer.cpp` bind to it as in the tag. The comment that stood on the old
 constructor, moved here:
 
-STEALTH: `aFilePath` e' il file da cui questa faccia viene, quando esiste.
+STEALTH: `aFilePath` is the file this face comes from, when there is one.
 
-Serve perche' `GetFontDescriptor` non riesce a ricavarlo da solo per le nostre facce: quel percorso passa da
-`IDWriteLocalFontFileLoader`, e il nostro caricatore presta byte in memoria, quindi non e' locale. Senza il percorso
-Gecko ripiega sui BYTE del font verso WebRender - misurati 65,9 MB nel processo padre su Linux, dove lo stesso difetto
-e' stato corretto per primo. Vedi `70-known-bugs.md` [B154].
+It is needed because `GetFontDescriptor` cannot work it out by itself for our faces: that path goes through
+`IDWriteLocalFontFileLoader`, and our loader lends bytes in memory, so it is not local. Without the path Gecko falls
+back to sending the BYTES of the font to WebRender - measured 65.9 MB in the parent process on Linux, where the same
+defect was corrected first. See known bug B154.
 
-Chi non passa un percorso non vede nessuna differenza: resta il comportamento upstream, che per un font scaricato da
-una pagina e' quello giusto perche' li' un file non esiste davvero.
+Whoever does not pass a path sees no difference: the upstream behaviour stays, which for a font downloaded by a page
+is the right one because there a file does not really exist.
 
 ## Windows: the DirectWrite stream lends through FontData
 
@@ -297,7 +297,7 @@ mBundleFilePath: Bundle file path; see StealthDWriteFontList.cpp (CreateFontInst
 Hook: `operator hb_face_t*() const&` and the deleted `operator hb_face_t*() const&&` (feature hb-face-lifetime).
 It is a change of the type of a Mozilla class, not a hook, and no form expresses it (a lone `const&& = delete` next to
 Mozilla's unqualified operator is ill-formed), so the two lines stay as they are, as a declared exception approved
-by the pm (G35, G24). The consequence is in fingerprint/fonts/font-list: `gfxFontconfigFontEntry::GetHBFace` and
+by the owner (G35, G24). The consequence is in fingerprint/fonts/font-list: `gfxFontconfigFontEntry::GetHBFace` and
 `GetFontTableInternal` cannot keep Mozilla's `hb_face_reference(gfxFontEntry::GetHBFace())` and
 `hb_face_reference_table(GetHBFace(), ...)`, which bind the temporary, so two lines there are rewritten
 (`StealthBaseHBFaceRef`, `StealthHBFaceTable`).
@@ -306,19 +306,19 @@ Where it comes from: commit 098cf5f777 (fingerprint/fonts/bundle, 2026-10-05) in
 after the one wrong caller of fourteen, `gfxHarfBuzzShaper::GetDesignFont`, left a dangling pointer. The comment
 that stood on it, moved here unchanged:
 
-La conversione vale solo su un LVALUE. Legarsi a un temporaneo e' vietato dal TIPO, non da una convenzione:
+The conversion is valid only on an LVALUE. Binding to a temporary is forbidden by the TYPE, not by a convention:
 
-        hb_face_t* f = entry->GetHBFace();   // non compila
-        const auto f(entry->GetHBFace());    // corretto
+        hb_face_t* f = entry->GetHBFace();   // does not compile
+        const auto f(entry->GetHBFace());    // correct
 
-GetHBFace() torna per valore, quindi scrivendo la prima forma il temporaneo si converte e viene distrutto alla fine
-di quella stessa istruzione: il puntatore e' penzolante dalla riga dopo, e chi lo usa scrive dentro memoria liberata.
-Misurato il 2026-08-10 su gfxHarfBuzzShaper::GetDesignFont(), che era l'unico dei quattordici chiamanti a
-sbagliarlo: 6 sessioni di navigazione morte su 10 contro 0 dopo la correzione. Il difetto era silenzioso perche' la
-memoria appena liberata resta quasi sempre leggibile, e il segmentation fault arrivava altrove e molto dopo.
+GetHBFace() returns by value, so when the first form is written the temporary is converted and destroyed at the end
+of that same statement: the pointer dangles from the next line, and whoever uses it writes into freed memory.
+Measured on 2026-08-10 on gfxHarfBuzzShaper::GetDesignFont(), which was the only one of the fourteen callers to get
+it wrong: 6 browsing sessions out of 10 died, against 0 after the correction. The defect was silent because freshly
+freed memory almost always stays readable, and the segmentation fault arrived elsewhere and much later.
 
-Sta nel TIPO e non solo in un gate perche' il progetto sapeva gia' la regola in tredici punti su quattordici e il
-quattordicesimo e' stato scritto sbagliato lo stesso: qui il compilatore lo rifiuta.
+It lives in the TYPE and not only in a gate because the project already knew the rule at thirteen points out of
+fourteen and the fourteenth was written wrong all the same: here the compiler rejects it.
 
 ## gfx/thebes/gfxFontEntry.h: gfxFontEntry::ShouldPublishCharacterMap declaration
 

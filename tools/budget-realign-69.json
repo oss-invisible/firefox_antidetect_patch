@@ -5,15 +5,15 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "js/xpconnect/src/Sandbox.cpp",
   "kind": "removed",
   "main": 2,
   "line": 3,
-  "cause": "check-8 delta accepted by name, PM-DECISIONS.md, 'Decisioni del pm del 22/11 mattina' (G2 contro G51): removed budget 2 -> 3: the line rewrites one more Mozilla line, `JS_GetPropertyDescriptorById(cx, obj, id, desc_, &holder)` -> `xpc::StealthGetPropertyDescriptor(...)  // STEALTH-HOOK(automation/hybrid-xrays)` (expression-wrap form, 1 line rewritten), replacing main's added `else if (xpc::IsHybridXrayWrapper(obj)) {...}` branch (hybrid-xrays hook lines 22 -> 13); the 2 setLocaleOverride lines rewritten are the same as main. Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
-  "ref": "design/PM-DECISIONS.md, decisioni del pm del 22/11 mattina"
+  "cause": "check-8 delta accepted by name, decision of 22/11 (morning) (G2 against G51): removed budget 2 -> 3: the line rewrites one more Mozilla line, `JS_GetPropertyDescriptorById(cx, obj, id, desc_, &holder)` -> `xpc::StealthGetPropertyDescriptor(...)  // STEALTH-HOOK(automation/hybrid-xrays)` (expression-wrap form, 1 line rewritten), replacing main's added `else if (xpc::IsHybridXrayWrapper(obj)) {...}` branch (hybrid-xrays hook lines 22 -> 13); the 2 setLocaleOverride lines rewritten are the same as main. Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
+  "ref": "decision of 22/11 (morning)"
  },
  {
   "file": "toolkit/xre/nsWindowsWMain.cpp",
@@ -21,7 +21,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "layout/base/nsLayoutUtils.cpp",
@@ -29,15 +29,15 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the one Mozilla line rewritten (GetSurfaceSnapshot call wrapped by StealthCanvasSnapshot) is the same on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/canvas/OffscreenCanvasDisplayHelper.cpp",
   "kind": "removed",
   "main": 1,
   "line": 2,
-  "cause": "check-8 delta accepted by name, PM-DECISIONS.md, 'Decisioni del pm del 22/11 mattina' (G2 contro G51): removed budget 1 -> 2: function-wrap form: the signature line `OffscreenCanvasDisplayHelper::GetSurfaceSnapshot() {` of Mozilla is renamed to GetSurfaceSnapshotAsDrawn (1 more Mozilla line rewritten) instead of main's added copy of the head (`already_AddRefed<...> OffscreenCanvasDisplayHelper::GetSurfaceSnapshotAsDrawn() { MOZ_ASSERT(NS_IsMainThread());`); the call-site rewrite (1 line) is the same as main. Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
-  "ref": "design/PM-DECISIONS.md, decisioni del pm del 22/11 mattina"
+  "cause": "check-8 delta accepted by name, decision of 22/11 (morning) (G2 against G51): removed budget 1 -> 2: function-wrap form: the signature line `OffscreenCanvasDisplayHelper::GetSurfaceSnapshot() {` of Mozilla is renamed to GetSurfaceSnapshotAsDrawn (1 more Mozilla line rewritten) instead of main's added copy of the head (`already_AddRefed<...> OffscreenCanvasDisplayHelper::GetSurfaceSnapshotAsDrawn() { MOZ_ASSERT(NS_IsMainThread());`); the call-site rewrite (1 line) is the same as main. Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
+  "ref": "decision of 22/11 (morning)"
  },
  {
   "file": "dom/canvas/moz.build",
@@ -45,15 +45,15 @@
   "main": 3,
   "line": 5,
   "cause": "+1 `SOURCES += [A, B]` split into one line per registration (form) and +1 `EXPORTS.mozilla.dom += [\"StealthCanvasUtils.h\"]`: the header now holds the declarations main carried as 21 lines inside Mozilla's CanvasUtils.h (CanvasUtils.h hooks 21 -> 0), so the registration is the reform of existing hooks, not new code",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/html/HTMLCanvasElement.cpp",
   "kind": "removed",
   "main": 1,
   "line": 2,
-  "cause": "check-8 delta accepted by name, PM-DECISIONS.md, 'Decisioni del pm del 22/11 mattina' (G2 contro G51): removed budget 1 -> 2: function-wrap form: `already_AddRefed<SourceSurface> HTMLCanvasElement::GetSurfaceSnapshot(` renamed to ...AsDrawn( (1 more Mozilla line rewritten) instead of main's added head with the comment `Mozilla's body, renamed.`; the `mOffscreenDisplay->GetSurfaceSnapshot()` rewrite is the same as main. Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
-  "ref": "design/PM-DECISIONS.md, decisioni del pm del 22/11 mattina"
+  "cause": "check-8 delta accepted by name, decision of 22/11 (morning) (G2 against G51): removed budget 1 -> 2: function-wrap form: `already_AddRefed<SourceSurface> HTMLCanvasElement::GetSurfaceSnapshot(` renamed to ...AsDrawn( (1 more Mozilla line rewritten) instead of main's added head with the comment `Mozilla's body, renamed.`; the `mOffscreenDisplay->GetSurfaceSnapshot()` rewrite is the same as main. Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
+  "ref": "decision of 22/11 (morning)"
  },
  {
   "file": "gfx/2d/moz.build",
@@ -61,7 +61,7 @@
   "main": 5,
   "line": 6,
   "cause": "+1 `EXPORTS.mozilla.gfx += [\"StealthRecordedProjection.h\"]`: the header already exists on main for the RecordedEventImpl.h hook; on the line it defines FOR_EACH_EVENT (Mozilla's macro renamed FOR_EACH_EVENT_MOZILLA) so it is reached through the exported RecordedEventImpl.h; one registration line for an existing hook (tied to the RecordedEventImpl.h rename, see its removed row)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/thebes/gfxTextRun.cpp",
@@ -69,7 +69,7 @@
   "main": 2,
   "line": 3,
   "cause": "include of ours + its blank line (registration form) and the marker moves onto the one wrapped line (expression-wrap form: 1 line rewritten, StealthFallbackMayDefer(...)) instead of marker on its own line + a rewritten line carrying logic (pfl->MayDeferCmapLoading()); Mozilla lines rewritten fall from 3 to 1",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/thebes/gfxFont.cpp",
@@ -77,7 +77,7 @@
   "main": 3,
   "line": 4,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/thebes/gfxHarfBuzzShaper.cpp",
@@ -85,7 +85,7 @@
   "main": 1,
   "line": 3,
   "cause": "main: inline `hb_font_destroy(mDesignFont);` (logic on Mozilla's API); line: include of ours + blank (registration form) + one notice `StealthReleaseDesignFont(mDesignFont);` (header StealthDesignFontAccess.h): same hook site reformed, logic moved into a file of ours",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/base/moz.build",
@@ -93,7 +93,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 registration line `UNIFIED_SOURCES += [\"StealthInputEventBirth.cpp\"]`: the SetNextKeyLatency definition that main carried inline in TextInputProcessor.cpp (NS_IMETHODIMP ... { return StealthSetNextKeyLatency(...); }) now lives in that file of ours; one line per registration, existing hook reformed (TextInputProcessor.cpp budget unchanged at 7)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/media/webrtc/jsapi/DefaultCodecPreferences.cpp",
@@ -101,7 +101,7 @@
   "main": 3,
   "line": 4,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the two guards change from `if (auto d = ...) return *d;` to `if (bool declared; ...(&declared)) return declared;` (still one line each, guard form)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "widget/windows/nsWindow.cpp",
@@ -109,7 +109,7 @@
   "main": 3,
   "line": 4,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the two calls keep one line each (arguments reduced to *this, lParam / info)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/gl/GLContext.cpp",
@@ -117,7 +117,7 @@
   "main": 3,
   "line": 4,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; main's local `const bool stealthMultisample = ...` + `if (StealthDeclaredMultisample(...)) mAvailableFeatures[...] = true;` (2 lines of logic) become two one-line notices (StealthNoteReportedMultisample / StealthRestoreMultisample) with a member of ours in GLContext.h (new to the budget, 1 line, within the 5-line rule)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/gl/GLContextProviderLinux.cpp",
@@ -125,7 +125,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the guard now calls StealthOwnGLCreateHeadless (Mozilla's `sGLContextProviderEGL.CreateHeadless(...)` moved into our file)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/gl/GLLibraryEGL.cpp",
@@ -133,7 +133,7 @@
   "main": 3,
   "line": 4,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; first hook is a guard `if (StealthOwnGLRefused(...)) return false;` (one line, as main)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/canvas/WebGLContextFramebufferOperations.cpp",
@@ -141,7 +141,7 @@
   "main": 2,
   "line": 3,
   "cause": "include of ours + blank (registration form) + one guard `if (StealthWebGLDrawBuffersIndexedMissing(this)) return;` replacing main's marker comment line + inline `if (!IsExtensionEnabled(OES_draw_buffers_indexed)) return;` (logic moved into our file)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/webgpu/ipc/WebGPUParent.cpp",
@@ -149,7 +149,7 @@
   "main": 1,
   "line": 3,
   "cause": "main: inline statement `*aOutLuid = {};`; line: include of ours + blank (registration form) + one notice `StealthWebGPUZeroLuid(aOutLuid);` (logic moved into StealthWebGPUDeclaration)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/thebes/gfxPlatform.cpp",
@@ -157,7 +157,7 @@
   "main": 3,
   "line": 4,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the `#if ... && 0` rewrite (1 Mozilla line) is the same on main, the marker now sits on that line",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/wgpu_bindings/src/server.rs",
@@ -165,7 +165,7 @@
   "main": 2,
   "line": 6,
   "cause": "main: two long lines each holding `#[path=..] mod x; x::f(...)` (2 statements per line); line: one registration line per module (`#[path = \"stealth_webgpu_env.rs\"] mod stealth_webgpu_env;`, `#[path = \"stealth_webgpu_adapter.rs\"] mod stealth_webgpu_adapter;`) each followed by its blank line, and one notice line per call: 2 -> 6 = 2 registrations + 2 blanks + 2 one-line calls",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/wgpu_bindings/src/lib.rs",
@@ -173,7 +173,7 @@
   "main": 1,
   "line": 1,
   "cause": "NO GROWTH: the one line `pub mod stealth_external_texture; // STEALTH-HOOK(...)` is identical on main (main budget 1); the line's tools/hook-budget.json simply lost the entry. Restore `\"gfx/wgpu_bindings/src/lib.rs\": 1`. It is a hook of ours (inventory category spoof, hookable already-hook), not upstream code: engine.py skips only category backport, so the check rule is right and the line's json is what is wrong",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/base/nsIOService.cpp",
@@ -181,7 +181,7 @@
   "main": 3,
   "line": 4,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/media/webrtc/jsapi/MediaTransportHandler.cpp",
@@ -189,7 +189,7 @@
   "main": 2,
   "line": 4,
   "cause": "our include in a separate block with a blank line on each side (registration form, +2 blanks) and one notice `StealthIceResolverSetContext(mDNSResolver, aProxyConfig);` replacing `mDNSResolver->SetOriginAttributes(StealthIceResolverAttributes(aProxyConfig));`",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/protocol/http/TLSTransportLayer.cpp",
@@ -197,7 +197,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the one Mozilla line rewritten (OriginAttributes() argument wrapped by StealthTransportContext) is the same count as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "security/manager/ssl/nsNSSCallbacks.cpp",
@@ -205,7 +205,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "toolkit/components/parentalcontrols/nsParentalControlsServiceWin.cpp",
@@ -213,7 +213,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the guard keeps one line",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "toolkit/components/url-classifier/nsUrlClassifierDBService.cpp",
@@ -221,7 +221,7 @@
   "main": 4,
   "line": 5,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/base/nsSocketTransport2.cpp",
@@ -229,7 +229,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the one rewritten line (PR_Connect wrapped by StealthConnect) is the same count as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "dom/media/webrtc/jsapi/PeerConnectionImpl.cpp",
@@ -237,7 +237,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/ipc/ProxyConfigLookup.cpp",
@@ -245,7 +245,7 @@
   "main": 21,
   "line": 22,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the 6 Mozilla lines rewritten (signature/ctor/call arguments extended with aLoadInfo, aOriginAttributes) are identical to main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/ipc/ProxyConfigLookup.h",
@@ -253,7 +253,7 @@
   "main": 11,
   "line": 12,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the 2 Mozilla lines rewritten are identical to main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/ipc/ProxyConfigLookupChild.h",
@@ -261,7 +261,7 @@
   "main": 4,
   "line": 5,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the 1 Mozilla line rewritten is identical to main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/ipc/ProxyConfigLookupParent.h",
@@ -269,7 +269,7 @@
   "main": 6,
   "line": 7,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the 1 Mozilla line rewritten is identical to main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/protocol/http/AlternateServices.cpp",
@@ -277,7 +277,7 @@
   "main": 2,
   "line": 3,
   "cause": "include of ours + blank (registration form) and the marker moves onto the one wrapped line `bool isProxyAllowed = StealthProxyAllowsHttp3(pi, <Mozilla's expression>);` (expression-wrap form) in place of main's marker comment line + a rewritten line carrying `|| pi->IsSOCKS5()`; the 1 rewritten line is the same count as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/protocol/http/moz.build",
@@ -285,7 +285,7 @@
   "main": 1,
   "line": 2,
   "cause": "+1 registration line `UNIFIED_SOURCES += [\"StealthHttp3Socks.cpp\"]`: the logic main carried inline in the AlternateServices.cpp rewritten line (`|| pi->IsSOCKS5()`) now lives in that file of ours behind the wrap; one line per registration, existing hook reformed",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/socket/nsSOCKSIOLayer.cpp",
@@ -293,7 +293,7 @@
   "main": 4,
   "line": 5,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the 1 rewritten line (connect wrapped by StealthConnect) is identical to main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/base/moz.build",
@@ -301,7 +301,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 registration line `UNIFIED_SOURCES += [\"StealthLoadInfo.cpp\"]  # STEALTH-HOOK(automation/navigation)`: main carried that logic inline in Mozilla's LoadInfo.cpp (copy-ctor init, Get/SetJugglerLoadIdentifier bodies, TRRLoadInfo setters; LoadInfo.cpp budget 14 -> 3) and the line moves it into our file; one line per registration, existing hooks reformed",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "widget/GfxInfoBase.cpp",
@@ -309,7 +309,7 @@
   "main": 4,
   "line": 5,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "modules/libpref/Preferences.cpp",
@@ -317,7 +317,7 @@
   "main": 1,
   "line": 3,
   "cause": "main: an entry inside Mozilla's list `PREF_LIST_ENTRY(\"zoom.stealth.\"),  // Stealth: allow string prefs in content processes` (1 line, in a list); line: include of ours + blank (registration form) + a guard as first statement `if (StealthPrefAllowedInContent(aPref->Name())) return false;` (guard form); same behaviour, logic moved to StealthPrefSanitize.cpp",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "modules/libpref/moz.build",
@@ -325,7 +325,7 @@
   "main": 2,
   "line": 3,
   "cause": "+1 registration line `UNIFIED_SOURCES += [\"StealthPrefSanitize.cpp\"]` for the file of ours that now holds the allow-list logic main kept as a list entry in Preferences.cpp; the `\"juggler\",` list entry becomes one line `pref_groups += [\"juggler\"]` (same count)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "startupcache/StartupCache.cpp",
@@ -333,7 +333,7 @@
   "main": 1,
   "line": 3,
   "cause": "main: 1 rewritten line with logic `if (aUseLowPriorityIO && StartupCache::WritesMayLowerIOPriority())` (+ a static method in Mozilla's StartupCache.h, budget 3 -> none on the line); line: include of ours + blank (registration form) + the same 1 rewritten line as an expression wrap `if (StealthWritesMayLowerIOPriority(aUseLowPriorityIO))`",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "toolkit/xre/dllservices/UntrustedModulesData.cpp",
@@ -341,7 +341,7 @@
   "main": 12,
   "line": 13,
   "cause": "+1 line: the blank line closing our include block (registration form: our include in a separate block with its blank line); the hook lines are the same in number as on main; the 5 Mozilla lines rewritten are identical to main",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "toolkit/components/url-classifier/SafeBrowsing.sys.mjs",
@@ -349,62 +349,62 @@
   "main": 2,
   "line": 3,
   "cause": "main: marker comment on its own line + `Services.prefs.addObserver(\"zoom.stealth.apikey\", this);`; line: import of ours + blank (registration form) + one notice `StealthObserveApiKey(this);`: same hook site reformed, logic moved to StealthApiKeys.sys.mjs",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/2d/RecordedEventImpl.h",
   "kind": "removed",
   "main": 0,
   "line": 1,
-  "cause": "check-8 delta accepted by name, PM-DECISIONS.md, 'Decisioni del pm del 22/11 mattina' (G2 contro G51): removed budget 0 -> 1: function-wrap form for a macro: Mozilla's `#define FOR_EACH_EVENT(f)` line is renamed `FOR_EACH_EVENT_MOZILLA(f) /* STEALTH-HOOK(...) */`, our FOR_EACH_EVENT (Mozilla's list plus ours) is defined in StealthRecordedProjection.h; main added the list entry `f(STEALTHPROJECTSURFACE, RecordedStealthProjectSurface);` inside Mozilla's list instead (no Mozilla line removed). Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
-  "ref": "design/PM-DECISIONS.md, decisioni del pm del 22/11 mattina"
+  "cause": "check-8 delta accepted by name, decision of 22/11 (morning) (G2 against G51): removed budget 0 -> 1: function-wrap form for a macro: Mozilla's `#define FOR_EACH_EVENT(f)` line is renamed `FOR_EACH_EVENT_MOZILLA(f) /* STEALTH-HOOK(...) */`, our FOR_EACH_EVENT (Mozilla's list plus ours) is defined in StealthRecordedProjection.h; main added the list entry `f(STEALTHPROJECTSURFACE, RecordedStealthProjectSurface);` inside Mozilla's list instead (no Mozilla line removed). Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
+  "ref": "decision of 22/11 (morning)"
  },
  {
   "file": "widget/nsIWidget.cpp",
   "kind": "removed",
   "main": 0,
   "line": 1,
-  "cause": "check-8 delta accepted by name, PM-DECISIONS.md, 'Decisioni del pm del 22/11 mattina' (G2 contro G51): removed budget 0 -> 1: expression-wrap form: `doReposition(DesktopRect(screen->GetRectDisplayPix()));` -> `doReposition(mozilla::widget::StealthFullscreenRectOr(*this, DesktopRect(...)));  // STEALTH-HOOK(...)` (1 Mozilla line rewritten) replacing main's added 4-line block `if (const auto declared = StealthDeclaredFullscreenRect(*this)) { doReposition(*declared); return void(...); }` (hook lines 5 -> 3, no Mozilla line removed on main). Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
-  "ref": "design/PM-DECISIONS.md, decisioni del pm del 22/11 mattina"
+  "cause": "check-8 delta accepted by name, decision of 22/11 (morning) (G2 against G51): removed budget 0 -> 1: expression-wrap form: `doReposition(DesktopRect(screen->GetRectDisplayPix()));` -> `doReposition(mozilla::widget::StealthFullscreenRectOr(*this, DesktopRect(...)));  // STEALTH-HOOK(...)` (1 Mozilla line rewritten) replacing main's added 4-line block `if (const auto declared = StealthDeclaredFullscreenRect(*this)) { doReposition(*declared); return void(...); }` (hook lines 5 -> 3, no Mozilla line removed on main). Form-valid, but the Mozilla lines removed/rewritten grow (check 8)",
+  "ref": "decision of 22/11 (morning)"
  },
  {
   "file": "dom/base/test/gtest/moz.build",
   "kind": "hook",
   "main": 1,
   "line": 4,
-  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "cause": "Registration: one line per test file (decision on the lines outside the list)",
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "netwerk/protocol/res/moz.build",
   "kind": "hook",
   "main": 2,
   "line": 4,
-  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "cause": "Registration: one line per test file (decision on the lines outside the list)",
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "intl/locale/tests/gtest/moz.build",
   "kind": "hook",
   "main": 1,
   "line": 2,
-  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "cause": "Registration: one line per test file (decision on the lines outside the list)",
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "toolkit/components/urlformatter/moz.build",
   "kind": "hook",
   "main": 1,
   "line": 2,
-  "cause": "Registrazione: una riga per file di test (pm, PM-DECISIONS.md, decisioni sulle righe fuori elenco)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "cause": "Registration: one line per test file (decision on the lines outside the list)",
+  "ref": "hook contract (STRUCTURE.md)"
  },
  {
   "file": "gfx/tests/gtest/moz.build",
   "kind": "hook",
   "main": 13,
   "line": 14,
-  "cause": "Registrazione: una riga per file di test (noise-projection, font-list, bundle, metrics), ognuna con il suo marcatore (pm, PM-DECISIONS.md, riallineamento dei tetti, riga in più del 22/11)",
-  "ref": "portabilita-69 hook contract (STRUCTURE.md)"
+  "cause": "Registration: one line per test file (noise-projection, font-list, bundle, metrics), each with its marker (decision on realigning the ceilings, extra line of 22/11)",
+  "ref": "hook contract (STRUCTURE.md)"
  }
 ]

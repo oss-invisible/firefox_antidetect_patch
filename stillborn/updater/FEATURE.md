@@ -9,8 +9,8 @@ scripts/validate_release.py --selftest (assert_updater_is_retails)
 ## What it does
 
 The application update system is the retail's, minus what would change the
-installed browser or the host (owner's decision, 2026-10-30: "come ufficiale,
-senza installare").
+installed browser or the host (owner's decision, 2026-10-30: "as official,
+without installing").
 
 - `build/moz.configure/update-programs.configure` is Mozilla's file: the
   updater, the maintenance service and the update agent are compiled and

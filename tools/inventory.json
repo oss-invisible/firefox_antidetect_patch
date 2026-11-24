@@ -11,16 +11,15 @@
   "hookable": "already-hook",
   "anchor": "(top-level document)",
   "evidence": [
-   "+# Questo albero non e' mozilla-central: e' il nostro Firefox patchato",
-   "+Ramo `stealth/157`. Le istruzioni di Mozilla qui sopra valgono; queste vengono"
+   "+@STEALTH_CLAUDE.md <!-- STEALTH-HOOK(platform/repo) -->"
   ],
-  "notes": "Developer/agent instructions, not code; Mozilla's AGENTS.md is imported above it (line 1, unchanged). Points at workbench paths outside this repo (c:/src/firefox-stealth) and at a build mirror ~/ff-build/firefox-150 (a WSL path, name kept from 150); whether that mirror is stale is unverified (not checkable from this tree). Says branch stealth/157, which matches the current tree. Text is in Italian. States rules (every spoof through zoom.stealth.*/stealthfox.* prefs; never rename them) that bind the whole patch series.",
+  "notes": "Registration hook: one import line of our STEALTH_CLAUDE.md (the instructions for agents working in this tree) above Mozilla's `@AGENTS.md` import, which stays as it is. The line carries the STEALTH-HOOK marker. The instructions themselves live in our own file, not in CLAUDE.md.",
   "verifier": {
    "changed": [
     "evidence",
     "notes"
    ],
-   "why": "Evidence line was truncated (not verbatim); the ~/ff-build/firefox-150 staleness cannot be checked from the diff."
+   "why": "Evidence line was truncated (not verbatim)."
   }
  },
  {
@@ -38,7 +37,7 @@
    "+This build issues a single HTTPS GET to a public asset on",
    "+Current release: **firefox-18**, built from Firefox 151.0. Branch **`stealth/151`** is"
   ],
-  "notes": "Public disclosure of the anonymous launch counter (one GET per browser start, see BrowserGlue.sys.mjs and firefox.js). Inconsistency claim CONFIRMED: README.md:63 names the asset under feder-cr/invisible_firefox, browser/app/profile/firefox.js:3869 defaults the pref to feder-cr/firefox_antidetect_patch, browser/components/BrowserGlue.sys.mjs:426 falls back to feder-cr/invisible_playwright (that fallback is dead because firefox.js:3869 always defines the pref). Staleness claim CONFIRMED: README.md:17 says firefox-18 / Firefox 151.0 / branch stealth/151, while the tree is Firefox 157 on stealth/157 (CLAUDE.md). README also says the ping fires at final-ui-startup: consistent with BrowserGlue.sys.mjs:203-204 (case final-ui-startup calls _beforeUIStartup). The disclosure text is about OUR own network request, not about Firefox telemetry.",
+  "notes": "Public disclosure of the anonymous launch counter (one GET per browser start, see BrowserGlue.sys.mjs and firefox.js). Inconsistency claim CONFIRMED: README.md:63 names the asset under one repository, browser/app/profile/firefox.js:3869 defaults the pref to a second one, browser/components/BrowserGlue.sys.mjs:426 falls back to a third (that fallback is dead because firefox.js:3869 always defines the pref). Staleness claim CONFIRMED: README.md:17 says firefox-18 / Firefox 151.0 / branch stealth/151, while the tree is Firefox 157 on stealth/157 (CLAUDE.md). README also says the ping fires at final-ui-startup: consistent with BrowserGlue.sys.mjs:203-204 (case final-ui-startup calls _beforeUIStartup). The disclosure text is about OUR own network request, not about Firefox telemetry.",
   "verifier": {
    "changed": [
     "notes"
@@ -188,7 +187,7 @@
    "+      if (Services.prefs.getBoolPref(\"invisible_firefox.usage_ping.enabled\", true)) {",
    "+        fetch(usagePingUrl, { method: \"GET\", credentials: \"omit\", cache: \"no-store\" })"
   ],
-  "notes": "Adds a network request (GET, no payload) on every browser process start, gated by the pref, errors swallowed. It adds traffic of our own and removes nothing of Firefox's, hence category other rather than stillborn. Movable: move the block into an own module and leave a one-line call here. The compiled fallback URL (invisible_playwright, BrowserGlue.sys.mjs:426) is effectively dead because browser/app/profile/firefox.js:3869 always defines the pref (CONFIRMED); three different repos are named across README.md:63, firefox.js:3869 and this file.",
+  "notes": "Adds a network request (GET, no payload) on every browser process start, gated by the pref, errors swallowed. It adds traffic of our own and removes nothing of Firefox's, hence category other rather than stillborn. Movable: move the block into an own module and leave a one-line call here. The compiled fallback URL (the wrapper's repository, BrowserGlue.sys.mjs:426) is effectively dead because browser/app/profile/firefox.js:3869 always defines the pref (CONFIRMED); three different repos are named across README.md:63, firefox.js:3869 and this file.",
   "verifier": {
    "changed": [
     "inline_logic_lines",
@@ -498,7 +497,7 @@
    "+  attribute boolean fileInputInterceptionEnabled;",
    "+  attribute boolean bypassCSPEnabled;"
   ],
-  "notes": "Two attribute declarations, the rest is comment. The comment says overrideHasFocus, forceActiveState, disallowBFCache, languageOverride, overrideTimezone and overrideLocale are gone; grep of C:/ff/source finds no declaration of any of them in this file, so the comment matches the tree. The comment names the readers (HTMLInputElement for the file picker, CSP_IsBypassedFor for CSP); those readers are not in this group and were not checked. The comment also points to dom/base/StealthSessionDeclaration.h, which is ours. Verified readers: HTMLInputElement.cpp:1018 calls GetFileInputInterceptionEnabled and nsCSPUtils.cpp:141 calls GetBypassCSPEnabled (both confirmed); the removed attributes named in the comment are absent from nsIDocShell.idl and nsDocShell.h (comment lines 690-696 only).",
+  "notes": "Two attribute declarations, the rest is comment. The comment says overrideHasFocus, forceActiveState, disallowBFCache, languageOverride, overrideTimezone and overrideLocale are gone; grep of the source repository finds no declaration of any of them in this file, so the comment matches the tree. The comment names the readers (HTMLInputElement for the file picker, CSP_IsBypassedFor for CSP); those readers are not in this group and were not checked. The comment also points to dom/base/StealthSessionDeclaration.h, which is ours. Verified readers: HTMLInputElement.cpp:1018 calls GetFileInputInterceptionEnabled and nsCSPUtils.cpp:141 calls GetBypassCSPEnabled (both confirmed); the removed attributes named in the comment are absent from nsIDocShell.idl and nsDocShell.h (comment lines 690-696 only).",
   "verifier": {
    "changed": [
     "notes"
@@ -736,7 +735,7 @@
    "+    int32_t w = mozilla::StaticPrefs::zoom_stealth_screen_width();",
    "+              h - mozilla::StaticPrefs::zoom_stealth_screen_taskbar_px()};"
   ],
-  "notes": "Declared color depth, screen rect and avail rect from prefs; avail height is reduced by zoom.stealth.screen_taskbar_px. GetAvailRect has about 6 logic lines and reads StaticPrefs directly, so it is movable behind one call. The file adds #include mozilla/StaticPrefs_zoom.h twice (hunk 1 and again at the end of the include block); remove one. Comments mention invisible_core and a document outside the repo (19-field-declaration-audit.md); they are project references, not code. VERIFIED: duplicate #include mozilla/StaticPrefs_zoom.h confirmed at dom/base/nsScreen.cpp:9 and :23.",
+  "notes": "Declared color depth, screen rect and avail rect from prefs; avail height is reduced by zoom.stealth.screen_taskbar_px. GetAvailRect has about 6 logic lines and reads StaticPrefs directly, so it is movable behind one call. The file adds #include mozilla/StaticPrefs_zoom.h twice (hunk 1 and again at the end of the include block); remove one. Comments mention the core and a document outside the repo; they are project references, not code. VERIFIED: duplicate #include mozilla/StaticPrefs_zoom.h confirmed at dom/base/nsScreen.cpp:9 and :23.",
   "verifier": {
    "changed": [
     "prefs",
@@ -1208,7 +1207,7 @@
    "+      drawn->GetType() == SurfaceType::RECORDING) {",
    "-    return mOffscreenDisplay->GetSurfaceSnapshot();"
   ],
-  "notes": "BUG (CONFIRMED, dom/html/HTMLCanvasElement.cpp:1554 tests drawn->GetType() == SurfaceType::RECORDING; gfx/layers/ipc/CanvasChild.cpp:139 returns CANVAS_RECORDING from GetType() and its GetUnderlyingType() returns mRecordedSurface->GetType(); the sibling test at gfx/2d/DrawTargetRecording.cpp:883 uses GetUnderlyingType(), and upstream uses GetUnderlyingType() == RECORDING for the same surfaces at :855): the GPU-side branch tests drawn->GetType() == SurfaceType::RECORDING, but a canvas recording wraps its snapshots with GetType() equal to CANVAS_RECORDING (gfx/layers/ipc/CanvasChild.cpp:139 in C:\\ff\\source). Its GetUnderlyingType() is the RECORDING one, which is what DrawTargetRecording::StealthProjectedSurface checks and what its own comment says. So for those surfaces the GPU-side projection is never taken and the code falls back to a readback here. The pixels should match, but the intent (no readback per drawImage) is broken. The static_cast at :1559 is safe because only DrawTargetRecording overrides IsRecording() to true (gfx/2d/DrawTargetRecording.h:46). The over-80-column StealthNoise line is confirmed at :1558. Also an over-80-column line: the StealthNoise call. The page-facing wrapper (about 18 logic lines) can move to an own file behind a one-line hook. The DrawTargetRecording.h include sits before Document.h, out of order.",
+  "notes": "BUG (CONFIRMED, dom/html/HTMLCanvasElement.cpp:1554 tests drawn->GetType() == SurfaceType::RECORDING; gfx/layers/ipc/CanvasChild.cpp:139 returns CANVAS_RECORDING from GetType() and its GetUnderlyingType() returns mRecordedSurface->GetType(); the sibling test at gfx/2d/DrawTargetRecording.cpp:883 uses GetUnderlyingType(), and upstream uses GetUnderlyingType() == RECORDING for the same surfaces at :855): the GPU-side branch tests drawn->GetType() == SurfaceType::RECORDING, but a canvas recording wraps its snapshots with GetType() equal to CANVAS_RECORDING (gfx/layers/ipc/CanvasChild.cpp:139 in the source repository). Its GetUnderlyingType() is the RECORDING one, which is what DrawTargetRecording::StealthProjectedSurface checks and what its own comment says. So for those surfaces the GPU-side projection is never taken and the code falls back to a readback here. The pixels should match, but the intent (no readback per drawImage) is broken. The static_cast at :1559 is safe because only DrawTargetRecording overrides IsRecording() to true (gfx/2d/DrawTargetRecording.h:46). The over-80-column StealthNoise line is confirmed at :1558. Also an over-80-column line: the StealthNoise call. The page-facing wrapper (about 18 logic lines) can move to an own file behind a one-line hook. The DrawTargetRecording.h include sits before Document.h, out of order.",
   "verifier": {
    "changed": [
     "notes"
@@ -3723,7 +3722,7 @@
    "+#include \"../../docshell/base/StealthNavigationEvents.h\"  // STEALTH-HOOK(automation/navigation)",
    "+  StealthNotifyNavigationMoved(aContext, mContentParent, mLoadIdentifier, mIsDocumentLoad, aIsNewTab);  // STEALTH-HOOK(automation/navigation)"
   ],
-  "notes": "Copies the load identifier from the load state to the LoadInfo of each document load. GetLoadIdentifier confirmed at C:/ff/source/docshell/base/nsDocShellLoadState.h:365 (returns mLoadIdentifier). The only place in this diff that sets the identifier. TriggerProcessSwitch tells the Juggler, as its first statement, that the parent moved the navigation to another process (StealthNotifyNavigationMoved, docshell/base/StealthNavigationEvents.h), so the docShell it left does not end it: goto aborted wrongly, an intermittent of the 68 (Federico, 22/11: the engine fixes of the intermittents enter the 69). The include is a registration line with its blank line.",
+  "notes": "Copies the load identifier from the load state to the LoadInfo of each document load. GetLoadIdentifier confirmed in the source repository at docshell/base/nsDocShellLoadState.h:365 (returns mLoadIdentifier). The only place in this diff that sets the identifier. TriggerProcessSwitch tells the Juggler, as its first statement, that the parent moved the navigation to another process (StealthNotifyNavigationMoved, docshell/base/StealthNavigationEvents.h), so the docShell it left does not end it: goto aborted wrongly, an intermittent of the 68 (the owner, 22/11: the engine fixes of the intermittents enter the 69). The include is a registration line with its blank line.",
   "verifier": {
    "changed": [],
    "why": "All fields and cited facts checked against the diff and source; no change."
@@ -3947,7 +3946,7 @@
    "+    \"StealthBranding.h\",",
    "+    \"StealthBranding.cpp\","
   ],
-  "notes": "Registers our own files, both present in C:\\ff\\source\\netwerk\\protocol\\res. No logic.",
+  "notes": "Registers our own files, both present in netwerk/protocol/res of the source repository. No logic.",
   "verifier": {
    "changed": [],
    "why": "all fields checked against the diff; no change"
@@ -4356,7 +4355,7 @@
    "-    MOZILLA_API_KEY: () => AppConstants.MOZ_MOZILLA_API_KEY,",
    "+    MOZILLA_API_KEY: () => stealthDeclaredApiKey(PREF_APIKEY_MOZILLA),"
   ],
-  "notes": "Keys move from build-time AppConstants to prefs declared by invisible_core, read through one reader. An undeclared key gives an empty string plus a console error, so the request is not sent. The three pref names are literal constants on purpose (a grep gate). trimSensitiveURLs now reads the same prefs for log redaction. The helper functions (hunk 1) belong in our own file. Pref names contain a vendor name (google_*): check against the no-vendor-names rule.",
+  "notes": "Keys move from build-time AppConstants to prefs declared by the core, read through one reader. An undeclared key gives an empty string plus a console error, so the request is not sent. The three pref names are literal constants on purpose (a grep gate). trimSensitiveURLs now reads the same prefs for log redaction. The helper functions (hunk 1) belong in our own file. Pref names contain a vendor name (google_*): check against the no-vendor-names rule.",
   "verifier": {
    "changed": [],
    "why": "Checked against the diff and tree; no correction needed."
@@ -4437,7 +4436,7 @@
   "evidence": [
    "+        \"/juggler\","
   ],
-  "notes": "Registers the Juggler directory when ENABLE_WEBDRIVER is set. The /juggler directory is our own code and is not in this list; Verified: C:/ff/source/juggler exists (moz.build, TargetRegistry.js, SessionRoute.js, components/).",
+  "notes": "Registers the Juggler directory when ENABLE_WEBDRIVER is set. The /juggler directory is our own code and is not in this list; Verified: juggler exists in the source repository (moz.build, TargetRegistry.js, SessionRoute.js, components/).",
   "verifier": {
    "changed": [
     "notes"
@@ -4920,7 +4919,7 @@
   "evidence": [
    "+DIRS += [\"idwr\"]  # STEALTH-HOOK(fingerprint/fonts/idwr)"
   ],
-  "notes": "Builds gfx/idwr (invisible_DWriteCore's DirectWrite rasterizer) into libxul, on a line of its own outside Mozilla's DIRS list."
+  "notes": "Builds gfx/idwr (our DirectWrite rasterizer) into libxul, on a line of its own outside Mozilla's DIRS list."
  },
  {
   "file": "gfx/thebes/gfxPlatform.cpp",

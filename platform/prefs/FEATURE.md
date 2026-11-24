@@ -36,29 +36,29 @@ firefox.js declared both true and is loaded after all.js, so it won. The two lin
 now say `false` on Mozilla's own lines, marked; the final value is all.js's
 `false` and nothing of ours declares the pref.
 
-STEALTHFOX: le traduzioni restano al default di Gecko, che e' SPENTO
-(`modules/libpref/init/all.js` le dichiara false; e' firefox.js ad
-accenderle). Un browser che pilota una pagina non traduce niente.
+STEALTHFOX: translations stay at Gecko's default, which is OFF
+(`modules/libpref/init/all.js` declares them false; it is firefox.js that
+turns them on). A browser that drives a page translates nothing.
 
-Cosa costavano, misurato il 2026-08-14 su Linux con about:memory dumpato via
-SIGRTMIN. TranslationsParent rileva la lingua di OGNI pagina caricata, e per
-farlo istanzia il worker del rilevatore CLD2: `cld-worker.js` tiene **17,75 MB**
-di ArrayBuffer nel processo padre, ed e' 17,3 dei 19,4 MB di tutti i worker
-chrome messi insieme. Tre coppie di misure interlacciate sull'heap del padre -
-255,0/232,3, 276,0/276,0->229,0, 307,3/291,8 - danno tre differenze tutte
-negative, media **-28,4 MB**, e la piu' piccola (-15,5) e' della dimensione del
-worker stesso.
+What they cost, measured on 2026-08-14 on Linux with about:memory dumped via
+SIGRTMIN. TranslationsParent detects the language of EVERY page loaded, and to
+do so it instantiates the worker of the CLD2 detector: `cld-worker.js` holds
+**17.75 MB** of ArrayBuffer in the parent process, which is 17.3 of the 19.4 MB
+of all the chrome workers put together. Three pairs of interleaved measurements
+on the parent heap - 255.0/232.3, 276.0/276.0->229.0, 307.3/291.8 - give three
+differences, all negative, mean **-28.4 MB**, and the smallest (-15.5) is the
+size of the worker itself.
 
-⛔ E qui la forma della correzione e' una PREF e non un taglio nel codice, al
-contrario di about:newtab, per una ragione misurata e non per comodita': la
-bandiera funziona. Con la pref al default il worker non nasce - 0,00 MB in tre
-giri su tre - mentre browser.newtabpage.enabled lasciava about:home caricare
-l'add-on lo stesso. Dove il flag di Firefox copre davvero la feature, tagliare
-piu' a fondo aggiungerebbe divergenza dall'upstream per zero MB in piu'.
+⛔ And here the form of the correction is a PREF and not a cut in the code,
+unlike about:newtab, for a measured reason and not for convenience: the flag
+works. With the pref at its default the worker is not born - 0.00 MB in three
+runs out of three - whereas browser.newtabpage.enabled let about:home load the
+add-on all the same. Where Firefox's flag really covers the feature, cutting
+deeper would add divergence from upstream for zero extra MB.
 
-Non osservabile da una pagina: la traduzione e' interfaccia chrome, nessuna API
-web la espone, e non rilevare la lingua non cambia niente di cio' che la pagina
-puo' leggere.
+Not observable from a page: translation is chrome interface, no web API
+exposes it, and not detecting the language changes nothing of what the page
+can read.
 
 ### modules/libpref/init/all.js: font.size.monospace.{ar,el,he,x-cyrillic,x-unicode,x-western} 13
 

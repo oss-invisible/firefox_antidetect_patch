@@ -31,6 +31,6 @@
   "fix(naga spv-out): Don't load external texture planes in function preludes",
   "fix(naga spv-out): Reset external texture ids per function, return errors"
  ],
- "ours_where": "local branch bp159-fix of C:/ff/wgpu-bp (4f4dc63 + the commits above + ours), with naga tests and spirv-val checks",
+ "ours_where": "branch bp159-fix of a clone of the upstream wgpu repository (4f4dc63 + the commits above + ours), with naga tests and spirv-val checks",
  "drop_when": "Mozilla vendors a wgpu whose naga spv-out and Vulkan hal have external textures: at that port take Mozilla's files and keep only what upstream still lacks, compared with ours"
 }
