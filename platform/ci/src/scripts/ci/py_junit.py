@@ -2,8 +2,7 @@
 """Which python tests of OURS the `checks` job runs with pytest, for the junit the named hook tests judge reads (`junit-py`, nodes `py:<path>::<name>`).
 
 The tree the job materializes holds Mozilla's python tests (marionette, mach, ...) and ours; only ours are run. Ours are the files the series ADDS: the
-`test_*.py` of `<group>/<folder>/src/<path in the tree>`. Left out, on purpose: scripts/ci/ (the plan job's cases, run by test_ci.py, with their own runners)
-and scripts/tests/ (smoke tests that need a browser and the wrapper). A file with no `def test_` / `class Test` has nothing for pytest to collect (its checks
+`test_*.py` of `<group>/<folder>/src/<path in the tree>`. Left out, on purpose: scripts/ci/ (the CI's own cases, run by test_ci.py, with their own runners). A file with no `def test_` / `class Test` has nothing for pytest to collect (its checks
 run in `__main__`), so it is not listed: a hook cannot name a test it does not have.
 
     python3 scripts/ci/py_junit.py list --series .series --tree .
@@ -25,7 +24,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 #: Folders of the tree whose python tests are not for pytest in `checks` (see the docstring).
-SKIPPED = ("scripts/ci/", "scripts/tests/")
+SKIPPED = ("scripts/ci/",)
 HAS_TESTS = re.compile(r"^(?:def test_|async def test_|class Test)", re.M)
 
 

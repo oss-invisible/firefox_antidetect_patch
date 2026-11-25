@@ -2,7 +2,7 @@
 """scripts/ci/py_junit.py: which python tests of ours the `checks` job runs with pytest.
 
 Red cases first: a Mozilla test of the tree is not ours and is not listed, a file of ours that the tree does not have is not listed, a script with nothing for
-pytest to collect is not listed, scripts/ci/ and scripts/tests/ are left out, a series with none of ours exits 1 (a `checks` step with no test must not be green).
+pytest to collect is not listed, scripts/ci/ is left out, a series with none of ours exits 1 (a `checks` step with no test must not be green).
 
     python3 scripts/ci/test_py_junit.py
 """
@@ -33,7 +33,7 @@ def cases() -> list:
 
     with tempfile.TemporaryDirectory() as tmp:
         series, tree = Path(tmp) / "series", Path(tmp) / "tree"
-        for rel in ("modules/libpref/test/test_stealth_a.py", "scripts/test_b.py", "scripts/ci/test_c.py", "scripts/tests/test_d.py",
+        for rel in ("modules/libpref/test/test_stealth_a.py", "scripts/test_b.py", "scripts/ci/test_c.py",
                     "modules/libpref/test/test_not_in_tree.py", "scripts/test_main_only.py"):
             put(series / "grp" / "fold" / "src", rel, "import sys\nassert True\n" if rel.endswith("main_only.py") else "def test_x():\n    pass\n")
             if "not_in_tree" not in rel:
@@ -46,7 +46,7 @@ def cases() -> list:
         add("the tests of ours with something to collect are listed, sorted, as paths in the tree (a feature three deep too)",
             pj.ours(series, tree) == ["modules/libpref/test/test_stealth_a.py", "scripts/test_b.py", "tools/test_class_style.py",
                                       "tools/test_three_deep.py"])
-        add("scripts/ci/ and scripts/tests/ are left out", not any(p.startswith(pj.SKIPPED) for p in pj.ours(series, tree)))
+        add("scripts/ci/ is left out", not any(p.startswith(pj.SKIPPED) for p in pj.ours(series, tree)))
         add("a Mozilla test of the tree (not in the series' src) is not listed", "browser/components/x/marionette/test_mozilla.py" not in pj.ours(series, tree))
         add("a file of ours that the tree does not have, and a script with no `def test_`, are not listed",
             "modules/libpref/test/test_not_in_tree.py" not in pj.ours(series, tree) and "scripts/test_main_only.py" not in pj.ours(series, tree))
