@@ -9,4 +9,5 @@ permissions:
   contents: read
 jobs:
   noreply-identity:
-    uses: oss-invisible/core/.github/workflows/noreply-identity.yml@main
+    # Pinned to a commit of the core (actions pinned by commit SHA: the reusable workflow of another repository is code that runs here).
+    uses: oss-invisible/core/.github/workflows/noreply-identity.yml@db3b67efd8d52924ecfe4c69e6daa33cdac58e8c # core main, the last change of noreply-identity.yml

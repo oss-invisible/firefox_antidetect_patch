@@ -8,6 +8,7 @@ main of the core.
 
     python -m pytest tools/tests
 """
+import re
 import sys
 from pathlib import Path
 
@@ -71,4 +72,5 @@ def test_branches_and_tags_series_yml_does_not_see_are_judged_by_the_core_workfl
     on = doc.get(True, doc.get("on"))
     assert set(on) == {"push"}, "a pull_request trigger would break the rule against `uses:`"
     assert on["push"]["branches-ignore"] == ["main"] and on["push"]["tags"] == ["**"]
-    assert doc["jobs"]["noreply-identity"]["uses"] == "oss-invisible/core/.github/workflows/noreply-identity.yml@main"
+    # the core's reusable workflow, pinned to a core commit (actions pinned by commit SHA: tools/tests/test_every_action_is_pinned_by_commit_sha.py)
+    assert re.fullmatch(r"oss-invisible/core/\.github/workflows/noreply-identity\.yml@[0-9a-f]{40}", doc["jobs"]["noreply-identity"]["uses"])
