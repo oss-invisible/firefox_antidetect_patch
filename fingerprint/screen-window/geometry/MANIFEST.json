@@ -28,7 +28,7 @@
  "sha256": {
   "dom/base/StealthWindowGeometry.h": "2df2db099fb6243093f72074599f434d37d4cab6cd8e9f37db90709ccebe2a6a",
   "dom/events/StealthScreenCoords.h": "c69bf4c1fa26ff6026ec8d33fc56f1cffb52467ed9ba673366b184e9fbc7cd1c",
-  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "a98e9e9ca378e96c1332914ddfb99fd50a9ab5019655af2ada6f894020ea8904",
+  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "ad37d9ce7d8fef3c5b40a1fab20d44bce332b89766b47c841ed004fd319e6d8e",
   "widget/StealthFullscreen.cpp": "dc70186a64ce74e7b6884b4b9070c138a205ae8aecadc61726d939e25b0208cf",
   "widget/StealthFullscreen.h": "729c754fe0556d42eb0c4b260778704b18e6589bd45cdacd22139828d4d64b8d",
   "widget/gtk/StealthFullscreenGtk.cpp": "87662eb8eaecec034517ed7aed2241aa0bfbc4b9e29583271ec3a13fe8d6c713",

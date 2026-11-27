@@ -613,7 +613,8 @@ TEST(StealthWindowGeometry, TheWayBackAtEveryDomainScale)
 // other: resizeBy runs again, with the delta from the restored window's own
 // chrome, trunc(844 + 85 - 937) = -8, and answers 937 (one border fewer than
 // the first call's 945, as in the measured second-call rule).
-// MEASUREMENT PENDING (round 5 of retail-window-geometry, after firefox-70): 937 is Juggler's arithmetic, deduced from the measured second-call rule; replace this comment with the run id when measured.
+// MEASUREMENT PENDING (round 5 of retail-window-geometry, after firefox-70): the repeat of the SECOND call is measured (run 45952171443, see
+// TheRepeatOfTheSecondResizeChangesNothingAtEveryDomainScale); the repeat of the FIRST call is being measured, and 937 stays Juggler's arithmetic, deduced from the measured second-call rule, until its run id replaces this comment.
 TEST(StealthWindowGeometry,
      ARepeatedResizeToTheSameSizeAnswersJugglersArithmetic)
 {
@@ -628,6 +629,36 @@ TEST(StealthWindowGeometry,
   const gfx::StealthWindowState again = JugglerCall(s, one, size);
   ASSERT_TRUE(again.mRestored);
   EXPECT_EQ(OuterCss(again, s), CSSIntSize(516, 937));
+}
+
+// The repeat of the SECOND Page.setViewportSize, as retail answers it: retail
+// capture round 5 (GitHub run oss-invisible/core 45952171443, step
+// juggler2_repeat) repeats the second call at the same size and nothing
+// changes at any scale. From the maximized window: (390, h1), then (414, h2),
+// then (414, h2) again; the state after the repeat is bit for bit the state
+// after the second call, and the page reads the second call's outer size.
+TEST(StealthWindowGeometry,
+     TheRepeatOfTheSecondResizeChangesNothingAtEveryDomainScale)
+{
+  // The measured rows: 100%, 125% and 150% on 1920x1080, 200% on 1600x1200.
+  for (const size_t row : {size_t(0), size_t(1), size_t(3), size_t(4)}) {
+    const RetailSequence& r = kRetailSequence[row];
+    const RetailFirstResize& first = kRetailFirstResize[r.mFirst];
+    const Scenario s = ScenarioOf(first);
+    const gfx::StealthWindowState one =
+        JugglerCall(s, gfx::StealthWindowState(), first.mInner);
+    const gfx::StealthWindowState two = JugglerCall(s, one, r.mSecondInner);
+    ASSERT_TRUE(two.mRestored) << "scale " << first.mScale;
+    ASSERT_EQ(OuterCss(two, s), r.mSecondOuter) << "scale " << first.mScale;
+
+    const gfx::StealthWindowState repeat = JugglerCall(s, two, r.mSecondInner);
+    ASSERT_TRUE(repeat.mRestored) << "scale " << first.mScale;
+    EXPECT_EQ(repeat, two) << "scale " << first.mScale << ", panel "
+                           << first.mPanelWidth << "x" << first.mPanelHeight;
+    EXPECT_EQ(OuterCss(repeat, s), r.mSecondOuter)
+        << "scale " << first.mScale << ", panel " << first.mPanelWidth << "x"
+        << first.mPanelHeight;
+  }
 }
 
 // A first call for the maximized content size does nothing (resizeBy with a

@@ -42,6 +42,13 @@ on:
           main for the series' rounds; the run's own wrapper_ref for a candidate.
         type: string
         default: main
+      core_ref:
+        description: >
+          The core ref the run tests: release.yml hands over the core its plan resolved (a candidate's core_ref input, or the pin of the wrapper), so that `core-ref` below
+          answers the run's own core and not the wrapper's pin, which a candidate of a new core may not have a tag for yet. Empty (series.yml's rounds): the core the
+          wrapper pins.
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -58,7 +65,7 @@ jobs:
   # The core the wrapper pins, derived, never written here: a commit written by hand is a reference that changes, and a port had to remember to move it.
   # The resolver is the one release.yml uses for the core of a candidate (platform/ci/src/scripts/release_plan.py): it reads the core version the wrapper
   # pins and finds the core commit of that version, and stops, naming what it found, when it cannot. The wrapper is the caller's wrapper_ref (main for
-  # the series' rounds). Its answer is the core of the wheelhouse (`py-deps-core`) and of the checkout `rebuilds` runs the core's checks from.
+  # the series' rounds); when the caller gives a core_ref (release.yml: the core its plan resolved) the resolver checks that one instead of the pin. Its answer is the core of the wheelhouse (`py-deps-core`) and of the checkout `rebuilds` runs the core's checks from.
   core-ref:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -80,9 +87,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           WRAPPER_REF: ${{ inputs.wrapper_ref || 'main' }}
+          CORE_REF: ${{ inputs.core_ref }}
         run: |
           set -euo pipefail
-          line="$(python3 .series/platform/ci/src/scripts/release_plan.py --resolve-core-ref --wrapper-ref "$WRAPPER_REF")"
+          args=(--resolve-core-ref --wrapper-ref "$WRAPPER_REF")
+          if [ -n "$CORE_REF" ]; then args+=(--core-ref "$CORE_REF"); fi
+          line="$(python3 .series/platform/ci/src/scripts/release_plan.py "${args[@]}")"
           case "$line" in
             core_ref=?*) ;;
             *) echo "the resolver did not print core_ref=<ref>: $line" >&2; exit 1 ;;
