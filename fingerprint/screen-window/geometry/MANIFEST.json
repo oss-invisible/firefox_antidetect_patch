@@ -1,5 +1,7 @@
 {
  "modified": [
+  "docshell/base/BrowsingContext.h",
+  "docshell/base/CanonicalBrowsingContext.cpp",
   "dom/base/nsGlobalWindowOuter.cpp",
   "dom/events/Event.cpp",
   "dom/events/test/gtest/moz.build",
@@ -24,9 +26,9 @@
   "widget/windows/StealthFullscreenWin.h": "100644"
  },
  "sha256": {
-  "dom/base/StealthWindowGeometry.h": "77d6c8e40803f0b74aba5eea29a49447e881b56a0d2c1647dc02c3b9e9e8ce97",
-  "dom/events/StealthScreenCoords.h": "3f25310b99b1a4270ce5af94481794c8ea62aa9eeead29abfb1d3bfc8432f775",
-  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "85bb5a00b1243cca68e958e74fed682e90103a7cccfad969984d6f200bbea10d",
+  "dom/base/StealthWindowGeometry.h": "2df2db099fb6243093f72074599f434d37d4cab6cd8e9f37db90709ccebe2a6a",
+  "dom/events/StealthScreenCoords.h": "c69bf4c1fa26ff6026ec8d33fc56f1cffb52467ed9ba673366b184e9fbc7cd1c",
+  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "a98e9e9ca378e96c1332914ddfb99fd50a9ab5019655af2ada6f894020ea8904",
   "widget/StealthFullscreen.cpp": "dc70186a64ce74e7b6884b4b9070c138a205ae8aecadc61726d939e25b0208cf",
   "widget/StealthFullscreen.h": "729c754fe0556d42eb0c4b260778704b18e6589bd45cdacd22139828d4d64b8d",
   "widget/gtk/StealthFullscreenGtk.cpp": "87662eb8eaecec034517ed7aed2241aa0bfbc4b9e29583271ec3a13fe8d6c713",
@@ -35,6 +37,32 @@
   "widget/windows/StealthFullscreenWin.h": "d1491b22e974c00f02d6e044b94ae66e6c9f4726cd49475f97d83029addec692"
  },
  "inventory": [
+  {
+   "file": "docshell/base/BrowsingContext.h",
+   "category": "spoof",
+   "feature": "window-geometry",
+   "prefs": [],
+   "added": 1,
+   "removed": 0,
+   "hunks": 1,
+   "inline_logic_lines": 1,
+   "hookable": "already-hook",
+   "anchor": "MOZ_EACH_BC_FIELD list (the FIELD of InnerSizeSpoofedForRFP; the new FIELD follows it)",
+   "notes": "One FIELD, StealthWindowState (uint64_t, top only, CanSet::Unrestricted), the main window's restored state: restored or not, outer size in device pixels, UI density. It is synced to every process on the top BrowsingContext with the same policy as Mozilla's InnerSizeSpoofedForRFP, and moved only by Juggler's notification, handled by a parent-process observer with the declared scale. outerWidth/outerHeight, screenX/Y, mozInnerScreenX/Y and the screenX - clientX of every event are derived from it."
+  },
+  {
+   "file": "docshell/base/CanonicalBrowsingContext.cpp",
+   "category": "juggler",
+   "feature": "window-geometry",
+   "prefs": [],
+   "added": 1,
+   "removed": 0,
+   "hunks": 1,
+   "inline_logic_lines": 0,
+   "hookable": "already-hook",
+   "anchor": "CanonicalBrowsingContext::ReplacedBy (after txn.SetInnerSizeSpoofedForRFP)",
+   "notes": "Carries the synced field StealthWindowState across a BrowsingContext replacement, exactly as Mozilla carries its own synced fields there (the line after txn.SetInnerSizeSpoofedForRFP): without it a replaced context would answer the maximized window again. One line, the setter that the FIELD macro of BrowsingContext.h generates."
+  },
   {
    "file": "dom/base/nsGlobalWindowOuter.cpp",
    "category": "spoof",

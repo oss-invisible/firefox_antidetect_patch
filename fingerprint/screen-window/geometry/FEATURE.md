@@ -25,6 +25,18 @@ file, because the size mode and the client area are private state that only
 OnWindowStateEvent sets; the hook is one call at the head of MakeFullScreen.
 Juggler's viewport pin lets go in fullscreen and comes back on leaving.
 
+### A main window resized by setViewportSize (2026-11-27)
+Page.setViewportSize resizes the main window the way Juggler does on retail Windows Firefox: resizeBy on the outer size, which restores a maximized window. Measured on retail 159.0 (core workflow retail-window-geometry.yml, four rounds, scales 1/1.25/1.5/2 live), and declared by the core (prefs zoom.stealth.screen.ui_normal, ui_compact, compact_below_css, restored_position, min_inner_width_css, min_inner_height_css, with the existing frame_border and maximized_ui):
+- The restored window sits at (restored_position, restored_position) = (4, 4) device px.
+- Its chrome is at least min_inner_width_css x min_inner_height_css (500 x 120 CSS). A 390-wide content therefore sits in a window 500 CSS wide.
+- The resize border is the maximized window's (frame_border). The bar above the content is ui_normal or ui_compact: Firefox 159 turns compact when the chrome is below compact_below_css (720 CSS) high, and re-decides this after every resize.
+- The first resize from the maximized window turns the top border into space under the content (one border more than later resizes). A restored window is never maximized again by a resize.
+- outerWidth/outerHeight, screenX/Y, mozInnerScreenX/Y and every event's screenX - clientX come from one state: StealthWindowState on the top BrowsingContext (carried across a BrowsingContext replacement by the line in CanonicalBrowsingContext::ReplacedBy). It moves only on Juggler's notification: juggler/TargetRegistry.js sends "stealth-viewport-resize" (the page's BrowsingContext and the requested CSS size) right before its resizeBy, and a parent-process observer (gfx/thebes/StealthViewportResizeObserver.cpp, registered from StealthEngineActive) computes the state with the declared scale through the pure gfx::StealthWindowStateAfterViewportResize (Juggler's arithmetic: truncated CSS deltas on fractional chrome sizes, outer rounded to CSS, back to device with RoundedToInt). A change of the top-level inner size (the first layout, fullscreen) is not a resize and leaves the state alone; a popup is declared from its own frame.
+
+A repeated setViewportSize to the same size is a Juggler call like any other: the engine answers Juggler's arithmetic (the outer height shrinks by one border, 945 -> 937 CSS at 100% for 390x844). The measurement on retail is still pending (round 5 of retail-window-geometry); the test comment names where the run id goes.
+
+Test: dom/events/test/gtest/TestStealthWindowGeometry.cpp (TheFirstResizeAtEveryDomainScale, TheSecondResizeAtEveryDomainScale, TheWayBackAtEveryDomainScale: 15 measured points; TheViewportResizeNotificationMovesTheTopContextField, TheFirstLayoutLeavesTheFieldAlone, FullscreenLeavesTheFieldAlone, TheViewportResizeDataIsTwoDecimalIntegers, ARepeatedResizeToTheSameSizeAnswersJugglersArithmetic, and the per-path, density-flip and minimum-width tests); wrapper:tests/test_a_restored_window_reads_the_retail_frame_after_set_viewport_size_e2e.py::test_a_restored_window_reads_the_retail_frame_after_set_viewport_size[1920x1080-dpr1.0] and ::test_the_restored_state_survives_a_browsing_context_replacement.
+
 ## Windows fullscreen (2026-11-02)
 
 On Windows a fullscreen window was put back on the HOST's monitor after

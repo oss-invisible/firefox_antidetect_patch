@@ -35,6 +35,10 @@ host's own). Run 41325657085 forced 1.5 over a 100% persona and read innerWidth
 1920 inside an outerWidth of 1291. The DPR is pinned in the persona
 (screen.dpr), never forced through the pref.
 
+## The restored window's state (2026-11-27)
+
+The gate also holds the arithmetic of the main window after Page.setViewportSize (gfx::StealthWindowState, StealthWindowStateAfterViewportResize, StealthDeclaredWindowFrame, StealthDeclaredMaximizedWindow, StealthDeclaredScale), over the declared prefs zoom.stealth.screen.ui_normal, ui_compact, compact_below_css, restored_position, min_inner_width_css and min_inner_height_css. StealthEngineActive registers the parent-process observer of "stealth-viewport-resize" (gfx/thebes/StealthViewportResizeObserver.cpp), the one writer of StealthWindowState: Juggler notifies it before its resizeBy, and nothing else moves the state. What a page reads from the state, and its tests, are in fingerprint/screen-window/geometry.
+
 ## Hooks in Mozilla files
 
 - `widget/GfxInfoBase.cpp`: our include in a block of ours after Mozilla's (registration); `GfxInfoBase::GetFeatureStatus`, a one-line guard right after Mozilla's retired-feature check (a retired feature returns from Mozilla's check as before; StealthGfxDeclaredStatus answers only live features); `GetFeatureSuggestedDriverVersion` and `EvaluateDownloadedBlocklist`, guards as the first statement. Every graphics feature decision answers from the declared retail statuses (StealthGfxFeatureStatus.cpp).
@@ -48,5 +52,6 @@ host's own). Run 41325657085 forced 1.5 over a 100% persona and read innerWidth
 - `gfx/thebes/StealthDeclarationGate.mozbuild`
 - `gfx/thebes/StealthGfxFeatureStatus.cpp`
 - `gfx/thebes/StealthGfxFeatureStatus.h`
+- `gfx/thebes/StealthViewportResizeObserver.cpp`
 - `gfx/thebes/gtest/moz.build`
 - `gfx/thebes/gtest/TestStealthGfxFeatureStatus.cpp`

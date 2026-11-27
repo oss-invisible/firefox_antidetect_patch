@@ -19,7 +19,7 @@
  "sha256": {
   "modules/libpref/StealthPrefSanitize.cpp": "74b3011a7ba4c985156487aea997956abff1068177c94ac6adbbeaa68da935c9",
   "modules/libpref/StealthPrefSanitize.h": "e9edb92b0ecbcca7fd60f9f1bbcea78e29e58cd8e03831bb13d296fd84cde322",
-  "modules/libpref/init/StealthPrefList.yaml": "aeb143a1c882568156a4f61f48fea0429978021584bf1605360caa037ce28029",
+  "modules/libpref/init/StealthPrefList.yaml": "6fe8f03e8644fa2e0f110bb53bdba46b7f6e5bb8dc2a292b42757b4522fe0d58",
   "modules/libpref/init/StealthPrefs.js": "4d2469ac65a42accab90abc97d9cd46e402783611351a4ecb98d6c2d76947abc",
   "modules/libpref/test/gtest/TestStealthPrefSanitize.cpp": "8a68b7e61ee063fb1f4344a3c02e2a6aff947f1881ed79f393ea614d06f9e964",
   "modules/libpref/test/test_stealth_prefs_declared_once.py": "a45f16eb3e43b4a2f9088a7dec154ab6835fd903e4978a3802f2fda042e9e9ef",

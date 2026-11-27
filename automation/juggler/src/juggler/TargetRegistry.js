@@ -1015,6 +1015,9 @@ export class PageTarget {
 
       const stackRect = this._linkedBrowser.closest('.browserStack').getBoundingClientRect();
       const toolbarTop = stackRect.y;
+      // Stealth: this resize is a Juggler call, the one thing that restores a retail window. Tell the
+      // engine, with the requested CSS size only: it moves the declared window state.
+      Services.obs.notifyObservers(this._linkedBrowser.browsingContext, 'stealth-viewport-resize', `${width},${height}`);
       this._window.resizeBy(width - this._window.innerWidth, height + toolbarTop - this._window.innerHeight);
 
       await this._awaitContentSize(width, height);

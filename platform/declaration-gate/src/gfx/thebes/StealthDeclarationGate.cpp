@@ -4,6 +4,7 @@
 
 #include "StealthDeclarationGate.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "mozilla/Assertions.h"
@@ -86,6 +87,10 @@ void StealthAssertDeclarationsComplete() {
   if (!XRE_IsParentProcess()) {
     return;
   }
+  // The observer of Juggler's viewport resizes is registered by
+  // StealthEngineActive the first time it answers true in the parent; asking
+  // again here is harmless (see StealthRegisterViewportResizeObserver).
+  StealthRegisterViewportResizeObserver();
   static Atomic<bool> sChecked(false);
   if (sChecked.exchange(true)) {
     return;
@@ -231,6 +236,26 @@ void StealthAssertDeclarationsComplete() {
        []() { return StaticPrefs::zoom_stealth_screen_popup_ui(); }, 1},
       {"zoom.stealth.screen.popup_position",
        []() { return StaticPrefs::zoom_stealth_screen_popup_position(); }, 0},
+      // The restored main window (Page.setViewportSize resizes the maximized
+      // one): the UI height of each density, the density threshold in CSS
+      // pixels, the position, the smallest chrome in CSS pixels. The position
+      // may be 0; the rest never is.
+      {"zoom.stealth.screen.ui_normal",
+       []() { return StaticPrefs::zoom_stealth_screen_ui_normal(); }, 1},
+      {"zoom.stealth.screen.ui_compact",
+       []() { return StaticPrefs::zoom_stealth_screen_ui_compact(); }, 1},
+      {"zoom.stealth.screen.compact_below_css",
+       []() { return StaticPrefs::zoom_stealth_screen_compact_below_css(); },
+       1},
+      {"zoom.stealth.screen.restored_position",
+       []() { return StaticPrefs::zoom_stealth_screen_restored_position(); },
+       0},
+      {"zoom.stealth.screen.min_inner_width_css",
+       []() { return StaticPrefs::zoom_stealth_screen_min_inner_width_css(); },
+       1},
+      {"zoom.stealth.screen.min_inner_height_css",
+       []() { return StaticPrefs::zoom_stealth_screen_min_inner_height_css(); },
+       1},
       {"zoom.stealth.screen.avail_device_width",
        []() { return StaticPrefs::zoom_stealth_screen_avail_device_width(); },
        320},
@@ -360,9 +385,17 @@ Maybe<StealthWindowFrame> StealthDeclaredWindowFrame() {
       StaticPrefs::zoom_stealth_screen_frame_border(),
       StaticPrefs::zoom_stealth_screen_maximized_ui(),
       StaticPrefs::zoom_stealth_screen_popup_ui(),
-      StaticPrefs::zoom_stealth_screen_popup_position()};
+      StaticPrefs::zoom_stealth_screen_popup_position(),
+      StaticPrefs::zoom_stealth_screen_ui_normal(),
+      StaticPrefs::zoom_stealth_screen_ui_compact(),
+      StaticPrefs::zoom_stealth_screen_compact_below_css(),
+      StaticPrefs::zoom_stealth_screen_restored_position(),
+      StaticPrefs::zoom_stealth_screen_min_inner_width_css(),
+      StaticPrefs::zoom_stealth_screen_min_inner_height_css()};
   if (frame.mBorder < 0 || frame.mMaximizedUi < 1 || frame.mPopupUi < 1 ||
-      frame.mPopupPosition < 0) {
+      frame.mPopupPosition < 0 || frame.mUiNormal < 1 || frame.mUiCompact < 1 ||
+      frame.mCompactBelowCss < 1 || frame.mRestoredPosition < 0 ||
+      frame.mMinInnerWidthCss < 1 || frame.mMinInnerHeightCss < 1) {
     // Unreachable in practice: the gate refuses at launch in the parent, so a
     // process that is serving pages has these. Kept as a refusal rather than a
     // fallback, because the day it becomes reachable the right behaviour is
@@ -388,13 +421,197 @@ Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow() {
   return Some(LayoutDeviceIntRect(-b, -b, w + 2 * b, h + 2 * b));
 }
 
+uint64_t StealthPackWindowState(const StealthWindowState& aState) {
+  if (!aState.mRestored) {
+    return 0;
+  }
+  constexpr int32_t kMax = (1 << 24) - 1;
+  const uint64_t width = uint64_t(std::clamp(aState.mOuter.width, 0, kMax));
+  const uint64_t height = uint64_t(std::clamp(aState.mOuter.height, 0, kMax));
+  return 1 | (uint64_t(aState.mCompact) << 1) | (width << 2) | (height << 26);
+}
+
+StealthWindowState StealthUnpackWindowState(uint64_t aPacked) {
+  StealthWindowState state;
+  if (!(aPacked & 1)) {
+    return state;
+  }
+  constexpr uint64_t kMask = (uint64_t(1) << 24) - 1;
+  state.mRestored = true;
+  state.mCompact = ((aPacked >> 1) & 1) != 0;
+  state.mOuter = LayoutDeviceIntSize(int32_t((aPacked >> 2) & kMask),
+                                     int32_t((aPacked >> 26) & kMask));
+  return state;
+}
+
+Maybe<float> StealthDeclaredScale() {
+  if (!StealthEngineActive()) {
+    return Nothing();
+  }
+  const float dpr = StaticPrefs::layout_css_devPixelsPerPx();
+  if (!StealthScaleMatchesDeclaration(
+          dpr, StaticPrefs::zoom_stealth_screen_width(),
+          StaticPrefs::zoom_stealth_screen_avail_device_width())) {
+    // Unreachable in practice, like the frame: the gate refuses at launch in
+    // the parent. Never the widget's scale in its place.
+    StealthAssertDeclarationsComplete();
+    return Nothing();
+  }
+  return Some(dpr);
+}
+
+CSSIntSize StealthMaximizedContent(const LayoutDeviceIntRect& aMaximized,
+                                   const StealthWindowFrame& aFrame,
+                                   float aScale) {
+  const int32_t b = aFrame.mBorder;
+  return RoundedToInt(
+      LayoutDeviceIntSize(aMaximized.width - 2 * b,
+                          aMaximized.height - 2 * b - aFrame.mMaximizedUi) /
+      CSSToLayoutDeviceScale(aScale));
+}
+
+StealthWindowState StealthNextWindowState(const StealthWindowState& aOld,
+                                          const CSSIntSize& aNewInner,
+                                          const LayoutDeviceIntRect& aMaximized,
+                                          const StealthWindowFrame& aFrame,
+                                          float aScale) {
+  // A size with a side of zero is no request.
+  if (aNewInner.width <= 0 || aNewInner.height <= 0) {
+    return aOld;
+  }
+  const CSSToLayoutDeviceScale scale(aScale);
+  const int32_t b = aFrame.mBorder;
+  // A window that was never restored and is asked for the maximized content is
+  // the maximized window (resizeBy(0, 0) does nothing). A restored one stays
+  // restored, whatever size it is resized to (retail does not maximize it
+  // again): it goes through the same resize as any other.
+  if (!aOld.mRestored &&
+      aNewInner == StealthMaximizedContent(aMaximized, aFrame, aScale)) {
+    return aOld;
+  }
+
+  // The window the resize starts from: its outer size, its chrome (the client
+  // area, the part of the outer size inside the frame) and the bar over the
+  // content.
+  LayoutDeviceIntSize outer;
+  LayoutDeviceIntSize chrome;
+  int32_t bar;
+  if (aOld.mRestored) {
+    outer = aOld.mOuter;
+    chrome = LayoutDeviceIntSize(outer.width - 2 * b, outer.height - b);
+    bar = aOld.mCompact ? aFrame.mUiCompact : aFrame.mUiNormal;
+  } else {
+    outer = aMaximized.Size();
+    chrome = LayoutDeviceIntSize(outer.width - 2 * b, outer.height - 2 * b);
+    bar = aFrame.mMaximizedUi;
+  }
+
+  // Juggler: resizeBy(w - innerWidth, h + toolbarTop - innerHeight) on the
+  // window, CSS pixels, a long each (truncated toward zero). The chrome's
+  // inner size and the bar are FRACTIONAL CSS pixels (Firefox 159, device
+  // pixels over the scale, in float as Gecko holds them), not rounded before
+  // the delta; resizeBy adds the deltas to the outer size rounded to CSS
+  // pixels and converts back with rounding.
+  const CSSIntSize outerCss = RoundedToInt(outer / scale);
+  const CSSSize chromeCss = chrome / scale;
+  const float barCss = float(bar) / aScale;
+  const int32_t dw = int32_t(double(aNewInner.width) - double(chromeCss.width));
+  const int32_t dh = int32_t(double(aNewInner.height) + double(barCss) -
+                             double(chromeCss.height));
+  LayoutDeviceIntSize next =
+      RoundedToInt(CSSIntSize(std::max(0, outerCss.width + dw),
+                              std::max(0, outerCss.height + dh)) *
+                   scale);
+  // Not under the smallest chrome.
+  const LayoutDeviceIntSize minChrome = RoundedToInt(
+      CSSIntSize(aFrame.mMinInnerWidthCss, aFrame.mMinInnerHeightCss) * scale);
+  next.width = std::max(next.width, minChrome.width + 2 * b);
+  next.height = std::max(next.height, minChrome.height + b);
+
+  StealthWindowState state;
+  state.mRestored = true;
+  state.mOuter = next;
+  // The density is decided again from the chrome height after the resize.
+  state.mCompact = double(next.height - b) / double(aScale) <
+                   double(aFrame.mCompactBelowCss);
+  return state;
+}
+
+StealthWindowState StealthWindowStateAfterViewportResize(
+    const StealthWindowState& aOld, const CSSIntSize& aRequested,
+    const LayoutDeviceIntRect& aMaximized, const StealthWindowFrame& aFrame,
+    float aDeclaredScale) {
+  return StealthNextWindowState(aOld, aRequested, aMaximized, aFrame,
+                                aDeclaredScale);
+}
+
+namespace {
+
+// One or more decimal digits, nothing else, at most five of them.
+bool ParseDecimal(const nsAString& aText, int32_t& aOut) {
+  if (aText.IsEmpty() || aText.Length() > 5) {
+    return false;
+  }
+  int32_t value = 0;
+  for (uint32_t i = 0; i < aText.Length(); ++i) {
+    const char16_t c = aText[i];
+    if (c < u'0' || c > u'9') {
+      return false;
+    }
+    value = value * 10 + int32_t(c - u'0');
+  }
+  aOut = value;
+  return true;
+}
+
+}  // namespace
+
+bool StealthParseViewportResize(const nsAString& aData, CSSIntSize& aOut) {
+  const int32_t comma = aData.FindChar(u',');
+  if (comma <= 0) {
+    return false;
+  }
+  int32_t width;
+  int32_t height;
+  if (!ParseDecimal(Substring(aData, 0, comma), width) ||
+      !ParseDecimal(Substring(aData, comma + 1), height) || width < 1 ||
+      height < 1 || width > kStealthMaxRequestedCss ||
+      height > kStealthMaxRequestedCss) {
+    return false;
+  }
+  aOut = CSSIntSize(width, height);
+  return true;
+}
+
+Maybe<LayoutDeviceIntRect> StealthRestoredWindowRect(
+    const StealthWindowState& aState, const StealthWindowFrame& aFrame) {
+  if (!aState.mRestored) {
+    return Nothing();
+  }
+  return Some(LayoutDeviceIntRect(aFrame.mRestoredPosition,
+                                  aFrame.mRestoredPosition, aState.mOuter.width,
+                                  aState.mOuter.height));
+}
+
+Maybe<LayoutDeviceIntPoint> StealthRestoredContentOrigin(
+    const StealthWindowState& aState, const StealthWindowFrame& aFrame) {
+  if (!aState.mRestored) {
+    return Nothing();
+  }
+  return Some(LayoutDeviceIntPoint(
+      aFrame.mRestoredPosition + aFrame.mBorder,
+      aFrame.mRestoredPosition +
+          (aState.mCompact ? aFrame.mUiCompact : aFrame.mUiNormal)));
+}
+
 bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter) {
   return aRealOuter.width != 0 || aRealOuter.height != 0;
 }
 
 Maybe<nsPoint> StealthDeclaredOriginShift(
     const nsPoint& aRealContentOrigin,
-    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin,
+    const Maybe<LayoutDeviceIntPoint>& aRestoredContentOrigin, bool aFullscreen,
     int32_t aAppUnitsPerDevPixel) {
   const Maybe<StealthWindowFrame> frame = StealthDeclaredWindowFrame();
   if (frame.isNothing()) {
@@ -402,12 +619,15 @@ Maybe<nsPoint> StealthDeclaredOriginShift(
   }
   // A fullscreen window's content is the screen; the maximized window's
   // starts at the screen's left edge, the UI height below its top; a popup's
-  // starts a border in and the popup UI down from wherever the popup really is.
+  // starts a border in and the popup UI down from wherever the popup really
+  // is; a restored main window's starts at its own content origin.
   const LayoutDeviceIntPoint declared =
       aFullscreen ? LayoutDeviceIntPoint(0, 0)
       : aPopupWindowOrigin
           ? *aPopupWindowOrigin +
                 LayoutDeviceIntPoint(frame->mBorder, frame->mPopupUi)
+      : aRestoredContentOrigin
+          ? *aRestoredContentOrigin
           : LayoutDeviceIntPoint(0, frame->mMaximizedUi);
   return Some(LayoutDevicePixel::ToAppUnits(declared, aAppUnitsPerDevPixel) -
               aRealContentOrigin);

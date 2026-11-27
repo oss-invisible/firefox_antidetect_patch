@@ -74,8 +74,11 @@ inline Maybe<nsPoint> StealthShiftOf(nsGlobalWindowOuter& aWindow) {
 // converted below with the window's own scale exactly like the real size.
 //
 // The MAIN window is maximized: the work area plus Windows' invisible resize
-// border on each side (retail 151, 100%: outerWidth - availWidth = 16). Until
-// firefox-38 this answered the work area itself, a window that does not
+// border on each side (retail 151, 100%: outerWidth - availWidth = 16) - unless
+// Page.setViewportSize made its content smaller than the maximized window's:
+// retail restores the window then, and it answers the restored rect (see
+// gfx::StealthWindowState), around its content, with its own frame.
+// Until firefox-38 this answered the work area itself, a window that does not
 // exist maximized on Windows (B261). A POPUP is its real inner size plus its
 // frame - a border on the left, right and bottom, the popup UI above - where
 // it used to answer the maximized window's size, 1920x1032 for a
@@ -131,7 +134,14 @@ inline bool StealthOuterSize(nsGlobalWindowOuter& aWindow, CSSIntSize& aSize,
       return true;
     }
   } else if (const auto maximized = gfx::StealthDeclaredMaximizedWindow()) {
-    aSize = gfx::RoundedToInt(maximized->Size() / scale);
+    // The maximized window, or the restored one Page.setViewportSize made: the
+    // same window state screenX/Y and the content origin read.
+    if (const auto restored =
+            StealthRestoredWindowRectOf(aWindow.GetBrowsingContext())) {
+      aSize = gfx::RoundedToInt(restored->Size() / scale);
+    } else {
+      aSize = gfx::RoundedToInt(maximized->Size() / scale);
+    }
     return true;
   }
   // Unreachable: the gate refuses at launch without the declaration.
@@ -145,7 +155,9 @@ inline bool StealthOuterSize(nsGlobalWindowOuter& aWindow, CSSIntSize& aSize,
 //
 // Stealth: the MAIN window's position is the declared maximized window's,
 // a resize border off the screen (-8 at 100%, -7 at 125%, -6 at 200% on
-// retail 151), which outerWidth above depends on: until 2026-08-09 the
+// retail 151), which outerWidth above depends on - or, once Page.
+// setViewportSize has restored the window (StealthWindowStateOf), the
+// restored window's. Until 2026-08-09 the
 // position stayed whatever the OS handed the headless widget, and screenX +
 // outerWidth came to 1924 on a 1920 screen. A POPUP keeps its REAL
 // position: the page chose it, or nsWindowWatcher put it at the declared
@@ -164,8 +176,16 @@ inline bool StealthScreenXY(nsGlobalWindowOuter& aWindow,
     return false;
   }
   if (const auto maximized = gfx::StealthDeclaredMaximizedWindow()) {
-    aPoint = gfx::RoundedToInt(
-        maximized->TopLeft() / aWindow.CSSToDevScaleForBaseWindow(aTreeOwner));
+    const CSSToLayoutDeviceScale scale =
+        aWindow.CSSToDevScaleForBaseWindow(aTreeOwner);
+    // A restored main window (Page.setViewportSize made the content smaller)
+    // keeps the top-left the declaration gives it, in place of the maximized
+    // window's off-screen border.
+    const Maybe<LayoutDeviceIntRect> restored =
+        StealthRestoredWindowRectOf(aWindow.GetBrowsingContext());
+    const LayoutDeviceIntPoint topLeft =
+        restored ? restored->TopLeft() : maximized->TopLeft();
+    aPoint = gfx::RoundedToInt(topLeft / scale);
     return true;
   }
   return false;

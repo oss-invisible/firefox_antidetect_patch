@@ -13,6 +13,7 @@ EXPORTS += [
 SOURCES += [
     "StealthDeclarationGate.cpp",
     "StealthGfxFeatureStatus.cpp",
+    "StealthViewportResizeObserver.cpp",
 ]
 
 # The gate's own gtests (the graphics feature declaration).

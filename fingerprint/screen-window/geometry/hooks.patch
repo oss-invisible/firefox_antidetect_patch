@@ -1,3 +1,27 @@
+diff --git a/docshell/base/BrowsingContext.h b/docshell/base/BrowsingContext.h
+index 5ad1e3b3d3e3abb0026439b4b21c457d5960ddf9..849148200fce3aff0c25d05dea10d39bf85f103b 100644
+--- a/docshell/base/BrowsingContext.h
++++ b/docshell/base/BrowsingContext.h
+@@ -342,6 +342,7 @@ struct EmbedderColorSchemes {
+    * protections */                                                            \
+   FIELD(InnerSizeSpoofedForRFP, CSSIntSize,                                    \
+         {.mTopOnly = true, .mCanSet = CanSet::Unrestricted})                   \
++  FIELD(StealthWindowState, uint64_t, {.mTopOnly = true, .mCanSet = CanSet::Unrestricted}) /* STEALTH-HOOK(fingerprint/screen-window/geometry) */ \
+   /* Used to propagate document's IPAddressSpace  */                           \
+   FIELD(IPAddressSpace, nsILoadInfo::IPAddressSpace,                           \
+         {.mCanSet = CanSet::ParentOnly})                                       \
+diff --git a/docshell/base/CanonicalBrowsingContext.cpp b/docshell/base/CanonicalBrowsingContext.cpp
+index 6ef207fb4a9a5ec3a85e5068c925f7479a0c5ea2..5baf69d34e314ebd50da69ca97f92a7b0d920333 100644
+--- a/docshell/base/CanonicalBrowsingContext.cpp
++++ b/docshell/base/CanonicalBrowsingContext.cpp
+@@ -318,6 +318,7 @@ void CanonicalBrowsingContext::ReplacedBy(
+   txn.SetShouldDelayMediaFromStart(GetShouldDelayMediaFromStart());
+   txn.SetForceOffline(GetForceOffline());
+   txn.SetInnerSizeSpoofedForRFP(GetInnerSizeSpoofedForRFP());
++  txn.SetStealthWindowState(GetStealthWindowState());  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+   txn.SetIPAddressSpace(GetIPAddressSpace());
+   txn.SetParentalControlsEnabled(GetParentalControlsEnabled());
+ 
 diff --git a/dom/base/nsGlobalWindowOuter.cpp b/dom/base/nsGlobalWindowOuter.cpp
 index 6f072ae4ff4528e187e2338dc5793e0881161d9c..d864090c3f9171abfe4ae73e988a4ee8fead85a4 100644
 --- a/dom/base/nsGlobalWindowOuter.cpp

@@ -6,10 +6,13 @@
 #define GFX_STEALTHDECLARATIONGATE_H
 
 #include "Units.h"
+#include "mozilla/Atomics.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/StaticPrefs_zoom.h"
 #include "mozilla/gfx/StealthCanvasProjection.h"
 #include "nsPoint.h"
+#include "nsStringFwd.h"
+#include "nsXULAppAPI.h"
 
 namespace mozilla {
 namespace gfx {
@@ -38,9 +41,27 @@ namespace gfx {
  * A bare binary launched with no seed is stock Firefox and must behave like
  * stock Firefox. That is not an incomplete declaration, it is the absence of
  * one.
+ *
+ * It is also where the parent process registers the observer of Juggler's
+ * viewport resizes (StealthRegisterViewportResizeObserver), the first time it
+ * answers true. No other point is certain to run in the parent before Juggler's
+ * first Page.setViewportSize: the parent asks this during gfx and branding
+ * startup, before any page exists. A content process pays nothing for it (one
+ * process-type comparison, only when the engine is on), the parent one relaxed
+ * atomic load once registered.
  */
+void StealthRegisterViewportResizeObserver();
+
+// Set, on the main thread of the parent, when the observer is registered.
+inline Atomic<bool, Relaxed> gStealthViewportObserverRegistered(false);
+
 inline bool StealthEngineActive() {
-  return StaticPrefs::zoom_stealth_fpp_hw_seed() > 0;
+  const bool active = StaticPrefs::zoom_stealth_fpp_hw_seed() > 0;
+  if (active && XRE_IsParentProcess() &&
+      !gStealthViewportObserverRegistered) {
+    StealthRegisterViewportResizeObserver();
+  }
+  return active;
 }
 
 /**
@@ -142,6 +163,19 @@ struct StealthWindowFrame {
   int32_t mPopupUi;
   // A popup opened without left/top: where it is put, on both axes.
   int32_t mPopupPosition;
+  // The browser UI height (window client top to content top) of a RESTORED
+  // main window: it depends on the UI density only, normal, or compact when the
+  // window's chrome height is under mCompactBelowCss CSS pixels. The maximized
+  // window's own bar is mMaximizedUi, declared with the same rule.
+  int32_t mUiNormal;
+  int32_t mUiCompact;
+  int32_t mCompactBelowCss;
+  // A restored main window sits at (mRestoredPosition, mRestoredPosition) on
+  // the screen, device pixels.
+  int32_t mRestoredPosition;
+  // The smallest chrome (client area) a window can have, in CSS pixels.
+  int32_t mMinInnerWidthCss;
+  int32_t mMinInnerHeightCss;
 };
 Maybe<StealthWindowFrame> StealthDeclaredWindowFrame();
 
@@ -150,6 +184,141 @@ Maybe<StealthWindowFrame> StealthDeclaredWindowFrame();
  * each side. Device pixels; the caller divides by its window's scale.
  */
 Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow();
+
+/**
+ * What the main window is, as ONE value kept on the top BrowsingContext
+ * (StealthWindowState, synced to every process) and updated in one place, when
+ * Juggler resizes the window: the "stealth-viewport-resize" observer
+ * (StealthRegisterViewportResizeObserver), which runs StealthNextWindowState.
+ * A change of the inner size does not move it: on retail only Juggler's
+ * resizeBy restores the window, and the inner size also changes with the first
+ * layout (the host's real size) and with fullscreen.
+ *
+ * Maximized (mRestored false, mOuter and mCompact unused) is the declared
+ * maximized window. Restored is what the main window becomes when
+ * Page.setViewportSize resizes it (retail leaves the maximized size mode on
+ * that resize): its outer size in device pixels, and the UI density it has, so
+ * the content origin does not depend on anything but this value. Every reader
+ * (outerWidth/outerHeight, screenX/screenY, mozInnerScreenX/Y, event screenX -
+ * clientX) derives from it through StealthRestoredWindowRect and
+ * StealthRestoredContentOrigin.
+ */
+struct StealthWindowState {
+  bool mRestored = false;
+  bool mCompact = false;
+  LayoutDeviceIntSize mOuter;
+
+  bool operator==(const StealthWindowState& aOther) const {
+    return mRestored == aOther.mRestored && mCompact == aOther.mCompact &&
+           mOuter == aOther.mOuter;
+  }
+};
+
+/**
+ * The largest size, in CSS pixels, the observer accepts from a
+ * Page.setViewportSize: a window no host has is ignored, not clamped.
+ */
+constexpr int32_t kStealthMaxRequestedCss = (1 << 14) - 1;
+
+/**
+ * The state as the 64-bit value the BrowsingContext field carries: bit 0
+ * restored, bit 1 compact, bits 2-25 the outer width, bits 26-49 the outer
+ * height. The maximized state is 0, the field's default.
+ */
+uint64_t StealthPackWindowState(const StealthWindowState& aState);
+StealthWindowState StealthUnpackWindowState(uint64_t aPacked);
+
+/**
+ * The scale the persona declared: device pixels per CSS pixel, the value of
+ * layout.css.devPixelsPerPx the gate validated against the declared screen
+ * (StealthScaleMatchesDeclaration). Never the widget's own scale: that is the
+ * host's. Nothing() when the engine is off, and when the declaration is
+ * missing or inconsistent (the gate refuses at launch in the parent, so a
+ * process serving pages has it).
+ */
+Maybe<float> StealthDeclaredScale();
+
+/**
+ * The content of the maximized window in CSS pixels, rounded as Gecko rounds:
+ * the size a page reads unresized. aMaximized is
+ * StealthDeclaredMaximizedWindow(), aScale the declared scale.
+ */
+CSSIntSize StealthMaximizedContent(const LayoutDeviceIntRect& aMaximized,
+                                   const StealthWindowFrame& aFrame,
+                                   float aScale);
+
+/**
+ * The state after ONE Juggler resize (Page.setViewportSize: resizeBy on the
+ * window) to aNewInner (CSS pixels). aMaximized is
+ * StealthDeclaredMaximizedWindow(), aFrame StealthDeclaredWindowFrame(), aScale
+ * the declared scale (StealthDeclaredScale).
+ *
+ * Only Juggler's calls reach this: every call is a resize from the window the
+ * state describes, a repeat of the last size included (retail runs resizeBy
+ * again, from the window it has). aOld is unchanged for a size with a
+ * non-positive side, and for a window that was never restored and is asked for
+ * the maximized content size (resizeBy with a zero delta does nothing). Any
+ * other size is a resize, which Juggler makes with resizeBy on the window's
+ * outer size in CSS pixels: the deltas are the new inner size minus the
+ * chrome's inner size (width) and plus the bar over it (height), both
+ * fractional CSS pixels, truncated toward zero; the outer size is rounded to
+ * CSS pixels, moved by them, converted back to device pixels and not under the
+ * minimum chrome. A restored window is never maximized again, whatever size it
+ * is resized to, the maximized content size included: it goes through the same
+ * resize. The UI density is decided again from the new chrome height. The
+ * chrome of a maximized window is the work area; of a restored one the outer
+ * size less a border on each side and the bottom.
+ */
+StealthWindowState StealthNextWindowState(const StealthWindowState& aOld,
+                                          const CSSIntSize& aNewInner,
+                                          const LayoutDeviceIntRect& aMaximized,
+                                          const StealthWindowFrame& aFrame,
+                                          float aScale);
+
+/**
+ * The pure core of the "stealth-viewport-resize" notification: the state after
+ * Juggler asked the window for aRequested (CSS pixels), with the declared
+ * scale.
+ */
+StealthWindowState StealthWindowStateAfterViewportResize(
+    const StealthWindowState& aOld, const CSSIntSize& aRequested,
+    const LayoutDeviceIntRect& aMaximized, const StealthWindowFrame& aFrame,
+    float aDeclaredScale);
+
+/**
+ * The data of the "stealth-viewport-resize" notification, "<width>,<height>"
+ * in CSS pixels, as two decimal integers from 1 to kStealthMaxRequestedCss.
+ * False, aOut untouched, for anything else.
+ */
+bool StealthParseViewportResize(const nsAString& aData, CSSIntSize& aOut);
+
+/**
+ * Observes "stealth-viewport-resize", which Juggler sends right before the
+ * resizeBy of Page.setViewportSize with the page's BrowsingContext as subject
+ * and the requested CSS size as data, and moves the main window's state
+ * (StealthWindowState on the top BrowsingContext) with it. Registered once, in
+ * the parent process, from StealthEngineActive (the first time it answers
+ * true, which the parent asks during gfx and branding startup) and again from
+ * StealthAssertDeclarationsComplete, harmlessly. Idempotent, a no-op outside
+ * the parent and on a thread that is not the main one (the next call from the
+ * main thread registers).
+ */
+void StealthRegisterViewportResizeObserver();
+
+/**
+ * The restored main window in device pixels: at the restored position, the
+ * state's outer size. Nothing() for the maximized state.
+ */
+Maybe<LayoutDeviceIntRect> StealthRestoredWindowRect(
+    const StealthWindowState& aState, const StealthWindowFrame& aFrame);
+
+/**
+ * Where the content of the restored main window starts on the screen, in device
+ * pixels: the restored position plus the border, and plus the bar of the
+ * state's density. The one formula for it. Nothing() for the maximized state.
+ */
+Maybe<LayoutDeviceIntPoint> StealthRestoredContentOrigin(
+    const StealthWindowState& aState, const StealthWindowFrame& aFrame);
 
 /**
  * Does a window answer the DECLARED outer size, or its own real one?
@@ -187,6 +356,11 @@ bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter);
  * for one) and whose content starts at p + (border, popup UI). In device
  * pixels; `aAppUnitsPerDevPixel` is the one of the caller's pres context.
  *
+ * `aRestoredContentOrigin` is StealthRestoredContentOrigin() for the
+ * maximized-window case: when it is Some, the main window is restored and its
+ * content starts there instead of at (0, UI). Ignored for a popup and in
+ * fullscreen.
+ *
  * One function only, because the shift is a fact and facts live in one place:
  * when it was computed in three places, the fourth consumer was forgotten.
  */
@@ -197,7 +371,8 @@ bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter);
 // in fullscreen, content 85 below the top while the page filled the screen.
 Maybe<nsPoint> StealthDeclaredOriginShift(
     const nsPoint& aRealContentOrigin,
-    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin,
+    const Maybe<LayoutDeviceIntPoint>& aRestoredContentOrigin, bool aFullscreen,
     int32_t aAppUnitsPerDevPixel);
 
 /**

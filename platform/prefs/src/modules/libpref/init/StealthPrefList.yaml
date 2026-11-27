@@ -248,6 +248,45 @@
   value: -1
   mirror: always
 
+# The main window once Page.setViewportSize has restored it (retail leaves the
+# maximized size mode on that resize), in DEVICE pixels unless a name says CSS.
+# The restored frame has the same resize border as the maximized one
+# (frame_border); the browser UI above the content depends on the UI density
+# only: ui_normal, or ui_compact when the window's chrome height is under
+# compact_below_css CSS pixels (the maximized window's own bar is the declared
+# maximized_ui). A restored window sits at (restored_position,
+# restored_position), and its chrome cannot be smaller than min_inner_width_css
+# by min_inner_height_css CSS pixels.
+- name: zoom.stealth.screen.ui_normal
+  type: RelaxedAtomicInt32
+  value: -1
+  mirror: always
+
+- name: zoom.stealth.screen.ui_compact
+  type: RelaxedAtomicInt32
+  value: -1
+  mirror: always
+
+- name: zoom.stealth.screen.compact_below_css
+  type: RelaxedAtomicInt32
+  value: -1
+  mirror: always
+
+- name: zoom.stealth.screen.restored_position
+  type: RelaxedAtomicInt32
+  value: -1
+  mirror: always
+
+- name: zoom.stealth.screen.min_inner_width_css
+  type: RelaxedAtomicInt32
+  value: -1
+  mirror: always
+
+- name: zoom.stealth.screen.min_inner_height_css
+  type: RelaxedAtomicInt32
+  value: -1
+  mirror: always
+
 # The work area in device pixels (panel minus the taskbar at the persona's
 # scale): the maximized window is this plus a border on each side. The CSS
 # screen and taskbar above stay what nsScreen answers; the core derives both

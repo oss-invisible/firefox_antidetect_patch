@@ -27,6 +27,33 @@
 
 namespace mozilla::dom {
 
+// What the main window is: maximized, or restored by Page.setViewportSize
+// (gfx::StealthWindowState). ONE value on the top BrowsingContext, synced to
+// every process and updated in one place, when Juggler resizes the window (the
+// "stealth-viewport-resize" observer in gfx/thebes/
+// StealthViewportResizeObserver.cpp); a change of the inner size does not move
+// it. outerWidth/outerHeight, screenX/screenY and the
+// content origin (mozInnerScreenX/Y, event screenX - clientX) all derive from
+// it, so they stay consistent in every process, an out-of-process iframe and an
+// event handler included. Arithmetic only, no layout.
+inline gfx::StealthWindowState StealthWindowStateOf(
+    const BrowsingContext* aBrowsingContext) {
+  return gfx::StealthUnpackWindowState(
+      aBrowsingContext->Top()->GetStealthWindowState());
+}
+
+// The restored main window of the top BrowsingContext in device pixels, or
+// Nothing() when it is the maximized window (or there is no declaration).
+inline Maybe<LayoutDeviceIntRect> StealthRestoredWindowRectOf(
+    const BrowsingContext* aBrowsingContext) {
+  const Maybe<gfx::StealthWindowFrame> frame = gfx::StealthDeclaredWindowFrame();
+  if (!aBrowsingContext || !frame) {
+    return Nothing();
+  }
+  return gfx::StealthRestoredWindowRect(StealthWindowStateOf(aBrowsingContext),
+                                        *frame);
+}
+
 // The shift between the real top-level content origin (the on-screen offset
 // of the root widget, what mozInnerScreenX reported before it became a
 // declaration) and the declared one, in app units; Nothing() with the engine
@@ -76,8 +103,16 @@ inline Maybe<nsPoint> StealthContentOriginShift(nsPresContext* aPresContext) {
   // In fullscreen the content is the screen. Same source as Fullscreen() in a
   // content process: the puppet widget's size mode.
   const bool fullscreen = rootWidget->SizeMode() == nsSizeMode_Fullscreen;
-  return gfx::StealthDeclaredOriginShift(real, popupOrigin, fullscreen,
-                                         auPerDevPx);
+  // A main window restored by Page.setViewportSize has its own content origin.
+  Maybe<LayoutDeviceIntPoint> restoredOrigin;
+  if (bc && !popupOrigin && !fullscreen) {
+    if (const auto frame = gfx::StealthDeclaredWindowFrame()) {
+      restoredOrigin =
+          gfx::StealthRestoredContentOrigin(StealthWindowStateOf(bc), *frame);
+    }
+  }
+  return gfx::StealthDeclaredOriginShift(real, popupOrigin, restoredOrigin,
+                                         fullscreen, auPerDevPx);
 }
 
 // aScreenPoint (the last term of the sum Event::GetScreenCoords forms: the

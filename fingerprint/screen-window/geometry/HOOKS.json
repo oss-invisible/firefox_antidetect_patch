@@ -1,5 +1,33 @@
 [
  {
+  "file": "docshell/base/BrowsingContext.h",
+  "function": "struct EmbedderColorSchemes {",
+  "kind": "add",
+  "form": "excepted",
+  "line": "  FIELD(StealthWindowState, uint64_t, {.mTopOnly = true, .mCanSet = CanSet::Unrestricted}) /* STEALTH-HOOK(fingerprint/screen-window/geometry) */ \\",
+  "test": "wrapper:tests/test_a_restored_window_reads_the_retail_frame_after_set_viewport_size_e2e.py::test_a_restored_window_reads_the_retail_frame_after_set_viewport_size[1920x1080-dpr1.0]",
+  "exception": "The main window's restored state, synced to every process on the top BrowsingContext, next to the field it is derived from. Same policy as Mozilla's InnerSizeSpoofedForRFP (top only, CanSet::Unrestricted): it moves only on Juggler's notification, handled by a parent-process observer with the declared scale.",
+  "reason_kind": "macro",
+  "pm": "approvato",
+  "quiet_anchor_why": {
+   "kind": "only-place",
+   "why": "a FIELD of the list of synced fields has no other place than that list; it sits next to the field it is derived from (InnerSizeSpoofedForRFP), with the same policy (top only, CanSet::Unrestricted), so the two fields move together when Mozilla edits the list"
+  }
+ },
+ {
+  "file": "docshell/base/CanonicalBrowsingContext.cpp",
+  "function": "void CanonicalBrowsingContext::ReplacedBy(",
+  "kind": "add",
+  "form": "anchor",
+  "line": "  txn.SetStealthWindowState(GetStealthWindowState());  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_restored_window_reads_the_retail_frame_after_set_viewport_size_e2e.py::test_the_restored_state_survives_a_browsing_context_replacement",
+  "anchor": "txn.SetInnerSizeSpoofedForRFP(GetInnerSizeSpoofedForRFP());",
+  "why": "Carries the field across a BrowsingContext replacement exactly as Mozilla carries its own synced fields there (the line after txn.SetInnerSizeSpoofedForRFP); without it a replaced context would answer the maximized window again.",
+  "exception": "txn.SetStealthWindowState is the setter that the FIELD macro of the same field generates (Set + the name of the field), the same kind of call as every txn.Set... line around it in Mozilla's ReplacedBy; the field is declared by the macro line of BrowsingContext.h, so no function of ours stands between the transaction and the field.",
+  "reason_kind": "macro",
+  "pm": "approvato"
+ },
+ {
   "file": "dom/base/nsGlobalWindowOuter.cpp",
   "function": "",
   "kind": "add",
