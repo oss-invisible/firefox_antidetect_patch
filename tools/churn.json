@@ -3572,6 +3572,28 @@
    "which": []
   },
   {
+   "key": "H|fingerprint/screen-window/geometry|docshell/base/BrowsingContext.h|struct EmbedderColorSchemes {|23c0e6116a7c",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "docshell/base/BrowsingContext.h",
+   "hunk": 1,
+   "churn": 5,
+   "which": [
+    "153",
+    "156",
+    "157",
+    "158",
+    "159"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|docshell/base/CanonicalBrowsingContext.cpp|void CanonicalBrowsingContext::ReplacedBy(|5f9f492cda58",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "docshell/base/CanonicalBrowsingContext.cpp",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
    "key": "H|fingerprint/screen-window/geometry|dom/base/nsGlobalWindowOuter.cpp||3acdfcab294b",
    "folder": "fingerprint/screen-window/geometry",
    "file": "dom/base/nsGlobalWindowOuter.cpp",
