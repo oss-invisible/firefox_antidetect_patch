@@ -47,7 +47,10 @@ def check(text):
     assert len(resolver) == 1, "the resolver step `core` in the job core-ref"
     step = resolver[0]
     run = step["run"]
-    assert 'platform/ci/src/scripts/release_plan.py --resolve-core-ref --wrapper-ref "$WRAPPER_REF"' in run
+    assert 'args=(--resolve-core-ref --wrapper-ref "$WRAPPER_REF")' in run
+    assert 'platform/ci/src/scripts/release_plan.py "${args[@]}"' in run
+    assert 'args+=(--core-ref "$CORE_REF")' in run, "a core_ref the caller gives (release.yml: the plan's) is the one resolved"
+    assert step["env"]["CORE_REF"] == "${{ inputs.core_ref }}", "the caller's core_ref, empty for the series' rounds"
     assert step["env"]["WRAPPER_REF"] == "${{ inputs.wrapper_ref || 'main' }}", "the wrapper is the caller's wrapper_ref, main by default"
     assert '>> "$GITHUB_OUTPUT"' in run, "its core_ref= line goes to the step's output"
     assert "set -euo pipefail" in run, "a resolver that fails fails the job"
