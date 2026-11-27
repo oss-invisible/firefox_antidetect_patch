@@ -1,8 +1,10 @@
 {
  "modified": [
+  "docshell/base/BrowsingContext.h",
   "dom/base/nsGlobalWindowOuter.cpp",
   "dom/events/Event.cpp",
   "dom/events/test/gtest/moz.build",
+  "dom/ipc/BrowserParent.cpp",
   "widget/gtk/moz.build",
   "widget/gtk/nsWindow.cpp",
   "widget/gtk/nsWindow.h",
@@ -16,6 +18,7 @@
   "dom/base/StealthWindowGeometry.h": "100644",
   "dom/events/StealthScreenCoords.h": "100644",
   "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "100644",
+  "dom/ipc/StealthFrameOrigin.h": "100644",
   "widget/StealthFullscreen.cpp": "100644",
   "widget/StealthFullscreen.h": "100644",
   "widget/gtk/StealthFullscreenGtk.cpp": "100644",
@@ -25,8 +28,9 @@
  },
  "sha256": {
   "dom/base/StealthWindowGeometry.h": "77d6c8e40803f0b74aba5eea29a49447e881b56a0d2c1647dc02c3b9e9e8ce97",
-  "dom/events/StealthScreenCoords.h": "3f25310b99b1a4270ce5af94481794c8ea62aa9eeead29abfb1d3bfc8432f775",
-  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "85bb5a00b1243cca68e958e74fed682e90103a7cccfad969984d6f200bbea10d",
+  "dom/events/StealthScreenCoords.h": "7505af815299d8384705ef587f443771722cd988e0f759d6ffd53602336f1034",
+  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "b9e5e3d6535a3c0e8a259075712743bb105ef37ba34f5a7ba7144e7d18ef3574",
+  "dom/ipc/StealthFrameOrigin.h": "c31653abd9330b87961223b9ed44f1e1c2fae7f970ad6e5d3c1114900f449812",
   "widget/StealthFullscreen.cpp": "dc70186a64ce74e7b6884b4b9070c138a205ae8aecadc61726d939e25b0208cf",
   "widget/StealthFullscreen.h": "729c754fe0556d42eb0c4b260778704b18e6589bd45cdacd22139828d4d64b8d",
   "widget/gtk/StealthFullscreenGtk.cpp": "87662eb8eaecec034517ed7aed2241aa0bfbc4b9e29583271ec3a13fe8d6c713",
@@ -35,6 +39,19 @@
   "widget/windows/StealthFullscreenWin.h": "d1491b22e974c00f02d6e044b94ae66e6c9f4726cd49475f97d83029addec692"
  },
  "inventory": [
+  {
+   "file": "docshell/base/BrowsingContext.h",
+   "category": "spoof",
+   "feature": "window-geometry",
+   "prefs": [],
+   "added": 1,
+   "removed": 0,
+   "hunks": 1,
+   "inline_logic_lines": 1,
+   "hookable": "already-hook",
+   "anchor": "MOZ_EACH_BC_FIELD list (after the FIELD of InnerSizeSpoofedForRFP)",
+   "notes": "One FIELD, StealthFrameToTopContent (Maybe of the frame's place matrix, CanSet::ParentOnly): the place of an out-of-process iframe in the top content, computed by the parent (dom/ipc/StealthFrameOrigin.h) and read by the frame's process. A content process cannot write it and no page can reach it."
+  },
   {
    "file": "dom/base/nsGlobalWindowOuter.cpp",
    "category": "spoof",
@@ -57,13 +74,13 @@
    "category": "spoof",
    "feature": "window-geometry",
    "prefs": [],
-   "added": 4,
-   "removed": 1,
+   "added": 5,
+   "removed": 2,
    "hunks": 2,
    "inline_logic_lines": 0,
    "hookable": "movable",
    "anchor": "Event::GetScreenCoords",
-   "notes": "Adds the declared content origin to the screen coordinates computed in Event::GetScreenCoords, so event.screenX - event.clientX equals mozInnerScreenX. Hot path: the comment records that an earlier version with an extra layout query per event made the browser too slow, so keep it arithmetic-only. Includes nsGlobalWindowOuter.h only for one static call, which pulls a large header into Event.cpp. About 50 lines of comment in the hunk; some may belong in docs.",
+   "notes": "Adds the declared content origin to the screen coordinates computed in Event::GetScreenCoords, so event.screenX - event.clientX equals mozInnerScreenX. Hot path: the comment records that an earlier version with an extra layout query per event made the browser too slow, so keep it arithmetic-only. Includes nsGlobalWindowOuter.h only for one static call, which pulls a large header into Event.cpp. About 50 lines of comment in the hunk; some may belong in docs. The transform of the widget to the top level is wrapped in StealthTopLevelTransform (one rewritten line), so the events of a frame take the matrix of the frame's place without the host's chrome offset.",
    "verifier": {
     "changed": [],
     "why": "Checked against the diff and source; no correction needed."
@@ -85,6 +102,19 @@
     "changed": [],
     "why": "Written with the hook, 2026-11-01."
    }
+  },
+  {
+   "file": "dom/ipc/BrowserParent.cpp",
+   "category": "spoof",
+   "feature": "window-geometry",
+   "prefs": [],
+   "added": 3,
+   "removed": 0,
+   "hunks": 2,
+   "inline_logic_lines": 0,
+   "hookable": "already-hook",
+   "anchor": "after the last include block (the include of StealthFrameOrigin.h); BrowserParent::SetChildToParentConversionMatrix (first statement)",
+   "notes": "The parent computes where an out-of-process iframe sits inside the top document's content: StealthNoteChildToParentMatrix, called first in SetChildToParentConversionMatrix, takes the frame's child-to-parent matrix and the top tab's matrix, so the host's chrome offset cancels, and writes the result to the ParentOnly synced field StealthFrameToTopContent of the frame's own BrowsingContext. The field is sent before Mozilla's SendChildToParentMatrix of the same call, on the same channel. One include and one call; the code is in dom/ipc/StealthFrameOrigin.h."
   },
   {
    "file": "widget/gtk/moz.build",

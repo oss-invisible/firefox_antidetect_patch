@@ -27,8 +27,59 @@
 
 namespace mozilla::dom {
 
+// The place of an out-of-process iframe inside the top document's content,
+// as the matrix the parent process computed for the frame's own
+// BrowsingContext (StealthNoteChildToParentMatrix in dom/ipc/
+// StealthFrameOrigin.h): the frame's child-to-top-level-widget matrix less the
+// tab's translation, so nothing of the host's chrome is in it. Nothing() with
+// the engine off, for a root that is not an out-of-process frame (the top
+// document and its in-process frames), before the frame's first matrix, and
+// when the tab's matrix is not a translation. Read the frame's OWN
+// BrowsingContext, never Top().
+inline Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> StealthFrameToTopContentOf(
+    nsPresContext* aPresContext) {
+  if (!aPresContext || !gfx::StealthEngineActive()) {
+    return Nothing();
+  }
+  nsIWidget* rootWidget = aPresContext->GetRootWidget();
+  if (!rootWidget) {
+    return Nothing();
+  }
+  BrowserChild* rootChild = rootWidget->GetOwningBrowserChild();
+  if (!rootChild || rootChild->IsTopLevel()) {
+    return Nothing();
+  }
+  // The BrowsingContext of the frame's root, not of the document asking: a
+  // same-process subframe inside the frame shares the frame's widget and so
+  // its place.
+  BrowsingContext* bc = rootChild->GetBrowsingContext();
+  if (!bc) {
+    return Nothing();
+  }
+  return bc->GetStealthFrameToTopContent();
+}
+
+// The matrix Event::GetScreenCoords applies to a widget point: Mozilla's
+// (aMozilla, WidgetToTopLevelWidgetTransform()) for every document but an
+// out-of-process iframe with a place in the top; for that frame the place
+// without the host's chrome offset, keeping the frame's own transform and
+// Firefox's integer offset (gfx::StealthFrameEventTransform). The page then
+// reads the declared top origin plus the frame's own place, whatever the real
+// chrome offset is, fractional or not.
+inline LayoutDeviceToLayoutDeviceMatrix4x4 StealthTopLevelTransform(
+    nsPresContext* aPresContext,
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aMozilla) {
+  const Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> rel =
+      StealthFrameToTopContentOf(aPresContext);
+  if (!rel) {
+    return aMozilla;
+  }
+  return gfx::StealthFrameEventTransform(*rel, aMozilla);
+}
+
 // The shift between the real top-level content origin (the on-screen offset
-// of the root widget, what mozInnerScreenX reported before it became a
+// of the root widget, less the frame's own place in the top for an
+// out-of-process iframe; what mozInnerScreenX reported before it became a
 // declaration) and the declared one, in app units; Nothing() with the engine
 // off. ONE function for mozInnerScreenX/Y and for the events (Event.cpp): this
 // is how screenX - clientX == mozInnerScreenX stays true in popups and iframes
@@ -51,8 +102,21 @@ inline Maybe<nsPoint> StealthContentOriginShift(nsPresContext* aPresContext) {
     return Nothing();
   }
   const int32_t auPerDevPx = aPresContext->AppUnitsPerDevPixel();
+  // The anchor is the root widget's screen offset less the frame's own place
+  // in the top, so the page reads the declared top origin plus that place
+  // (Firefox's rounded device offset of the frame, host chrome cancelled).
+  // The place is the parent's matrix for an out-of-process iframe. Before the
+  // frame's first matrix, and when the tab's matrix is not a translation, there
+  // is none and the place is (0, 0): the frame then reads the declared top
+  // origin. That pre-matrix rule is pending round 7 of the retail capture,
+  // which measures it. The host's real chrome offset is never used: it would
+  // leak it.
+  const Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> rel =
+      StealthFrameToTopContentOf(aPresContext);
+  const LayoutDeviceIntPoint offsetInTop =
+      rel ? gfx::StealthFrameOffsetInTop(*rel) : LayoutDeviceIntPoint();
   const nsPoint real = LayoutDevicePixel::ToAppUnits(
-      rootWidget->WidgetToScreenOffset(), auPerDevPx);
+      rootWidget->WidgetToScreenOffset() - offsetInTop, auPerDevPx);
   // A popup is declared from its REAL position: the outer rect of the
   // top-level window, which BrowserChild receives from the parent - also in an
   // out-of-process iframe, where it arrives from the embedder. It is the same

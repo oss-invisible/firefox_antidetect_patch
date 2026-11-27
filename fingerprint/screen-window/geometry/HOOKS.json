@@ -1,5 +1,20 @@
 [
  {
+  "file": "docshell/base/BrowsingContext.h",
+  "function": "struct EmbedderColorSchemes {",
+  "kind": "add",
+  "form": "excepted",
+  "line": "  FIELD(StealthFrameToTopContent, Maybe<LayoutDeviceToLayoutDeviceMatrix4x4>, {.mCanSet = CanSet::ParentOnly}) /* STEALTH-HOOK(fingerprint/screen-window/geometry) */ \\",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]",
+  "exception": "The matrix of the frame's place in the top content, computed by the parent, on the frame's own BrowsingContext. ParentOnly: a content process cannot write it, and no page can reach it (no WebIDL attribute and no JS accessor; only the C++ of StealthScreenCoords.h reads it).",
+  "reason_kind": "macro",
+  "pm": "approvato",
+  "quiet_anchor_why": {
+   "kind": "only-place",
+   "why": "a FIELD of the list of synced fields has no other place than that list; it sits among the fields of the same kind (BrowsingContext-wide state read by the frame's process), so the field moves with them when Mozilla edits the list"
+  }
+ },
+ {
   "file": "dom/base/nsGlobalWindowOuter.cpp",
   "function": "",
   "kind": "add",
@@ -58,6 +73,15 @@
  {
   "file": "dom/events/Event.cpp",
   "function": "Maybe<CSSDoublePoint> Event::GetScreenCoords(",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "      StealthTopLevelTransform(aPresContext, guiEvent->mWidget->WidgetToTopLevelWidgetTransform()).TransformPoint(  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "      guiEvent->mWidget->WidgetToTopLevelWidgetTransform().TransformPoint(",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/events/Event.cpp",
+  "function": "Maybe<CSSDoublePoint> Event::GetScreenCoords(",
   "kind": "add",
   "form": "wrap-expression",
   "line": "      StealthWithContentOrigin(aPresContext,  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
@@ -79,6 +103,22 @@
   "form": "registration",
   "line": "UNIFIED_SOURCES += [\"TestStealthWindowGeometry.cpp\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
   "test": "gtest:StealthWindowGeometry.FullscreenContentStartsAtTheScreenOrigin"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.cpp",
+  "function": "",
+  "kind": "add",
+  "form": "registration",
+  "line": "#include \"StealthFrameOrigin.h\"  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.cpp",
+  "function": "void BrowserParent::SetChildToParentConversionMatrix(",
+  "kind": "add",
+  "form": "notice",
+  "line": "  StealthNoteChildToParentMatrix(this, aMatrix);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
  },
  {
   "file": "widget/gtk/moz.build",

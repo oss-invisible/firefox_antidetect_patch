@@ -168,6 +168,46 @@ Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow();
 bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter);
 
 /**
+ * The place of an out-of-process iframe inside the top document's content, as
+ * a matrix: aFrame (the frame's child-to-top-level-widget matrix, what
+ * BrowserParent::GetChildToParentConversionMatrix() answers for the frame)
+ * with aTab's translation taken off (the same matrix of the tab). The tab's
+ * translation is the real offset of the browser chrome, and it is part of both
+ * matrices; taking it off exactly (a post-translation by its negative, which
+ * for a translation is aFrame * aTab.Inverse()) leaves only the frame's own
+ * place in the top document, with nothing of the host in it.
+ *
+ * Nothing() when aTab is not a 2D pure translation: the place of the frame
+ * cannot then be separated from the host, and the caller reads the declared
+ * origin alone.
+ */
+Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> StealthFrameToTopContent(
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aFrame,
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aTab);
+
+/**
+ * The frame's offset inside the top content, in device pixels: aRel applied to
+ * (0, 0) and rounded, the one rounding Firefox does for it
+ * (nsIWidget::WidgetToTopLevelWidgetOffset()). The frame reads the declared
+ * top content origin plus this.
+ */
+LayoutDeviceIntPoint StealthFrameOffsetInTop(
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aRel);
+
+/**
+ * The matrix Event::GetScreenCoords applies to a widget point, for an
+ * out-of-process iframe: aRel (StealthFrameToTopContent) post-translated by
+ * the integer K = R(aMozilla * 0) - R(aRel * 0), where aMozilla is the matrix
+ * Firefox would have used. R(result * p) = R(aRel * p) + K for every p: the
+ * event keeps the transform of the frame (scale, rotation) and takes the
+ * host's fractional offset out, and K is the same integer the mozInnerScreen
+ * shift removes, so both reads agree.
+ */
+LayoutDeviceToLayoutDeviceMatrix4x4 StealthFrameEventTransform(
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aRel,
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aMozilla);
+
+/**
  * The SHIFT between the real content origin and the declared one, in app
  * units. Nothing() when the engine is off.
  *

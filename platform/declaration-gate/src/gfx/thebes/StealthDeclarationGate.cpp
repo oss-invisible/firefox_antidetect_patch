@@ -392,6 +392,34 @@ bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter) {
   return aRealOuter.width != 0 || aRealOuter.height != 0;
 }
 
+Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> StealthFrameToTopContent(
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aFrame,
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aTab) {
+  Matrix tab;
+  if (!aTab.Is2D(&tab) || !tab.IsTranslation()) {
+    return Nothing();
+  }
+  const Point t = tab.GetTranslation();
+  LayoutDeviceToLayoutDeviceMatrix4x4 rel = aFrame;
+  rel.PostTranslate(-t.x, -t.y, 0.0f);
+  return Some(rel);
+}
+
+LayoutDeviceIntPoint StealthFrameOffsetInTop(
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aRel) {
+  return LayoutDeviceIntPoint::Round(aRel.TransformPoint(LayoutDevicePoint()));
+}
+
+LayoutDeviceToLayoutDeviceMatrix4x4 StealthFrameEventTransform(
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aRel,
+    const LayoutDeviceToLayoutDeviceMatrix4x4& aMozilla) {
+  const LayoutDeviceIntPoint k = StealthFrameOffsetInTop(aMozilla) -
+                                 StealthFrameOffsetInTop(aRel);
+  LayoutDeviceToLayoutDeviceMatrix4x4 result = aRel;
+  result.PostTranslate(float(k.x.value), float(k.y.value), 0.0f);
+  return result;
+}
+
 Maybe<nsPoint> StealthDeclaredOriginShift(
     const nsPoint& aRealContentOrigin,
     const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen,

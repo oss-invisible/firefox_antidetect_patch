@@ -15,7 +15,7 @@
  "dom/canvas/OffscreenCanvasDisplayHelper.cpp|fingerprint/canvas/noise-projection": 2,
  "dom/canvas/WebGLContext.cpp|fingerprint/webgl/shader-language": 1,
  "dom/canvas/WebGLShaderValidator.cpp|fingerprint/webgl/shader-language": 2,
- "dom/events/Event.cpp|fingerprint/screen-window/geometry": 1,
+ "dom/events/Event.cpp|fingerprint/screen-window/geometry": 2,
  "dom/file/BlobSet.cpp|fingerprint/js-surface/line-endings": 1,
  "dom/html/HTMLCanvasElement.cpp|fingerprint/canvas/noise-projection": 2,
  "dom/interfaces/base/nsIDOMWindowUtils.idl|fingerprint/input/event-birth": 1,

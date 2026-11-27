@@ -81,6 +81,35 @@ def release_plan_problems(docs: dict) -> list:
     return problems
 
 
+def core_ref_problems(checks_doc: dict, release_doc: dict) -> list:
+    """What keeps checks.yml's `core-ref` on the run's own core (candidate run 45956455761: «the wrapper pins the core 70.84.0, and the core has no tag v70.84.0»,
+    while the plan of the same run had resolved the core_ref it was given).
+
+    checks.yml declares the input `core_ref`; every job of it that runs `release_plan.py --resolve-core-ref` passes `--core-ref` from that input; and release.yml's
+    call of checks.yml hands over the core its plan resolved (`needs.plan.outputs.core_ref`), after the plan. As "where: what"."""
+    problems = []
+    inputs = (((checks_doc.get(True) or checks_doc.get("on") or {}).get("workflow_call") or {}).get("inputs")) or {}
+    if "core_ref" not in inputs:
+        problems.append("checks.yml: no input core_ref")
+    for job_name, job in (checks_doc.get("jobs") or {}).items():
+        for step in job.get("steps") or []:
+            run = "\n".join(l for l in str(step.get("run", "")).splitlines() if not l.strip().startswith("#"))
+            if not (RELEASE_PLAN.search(run) and "--resolve-core-ref" in run):
+                continue
+            where = "checks.yml / %s / %s" % (job_name, step.get("name", step.get("id", "?")))
+            if "--core-ref" not in run:
+                problems.append("%s: no --core-ref" % where)
+            if "inputs.core_ref" not in str((step.get("env") or {}).get("CORE_REF", "")) or "$CORE_REF" not in run:
+                problems.append("%s: --core-ref is not read from the input core_ref (env CORE_REF: ${{ inputs.core_ref }})" % where)
+    call = (release_doc.get("jobs") or {}).get("checks") or {}
+    if (call.get("with") or {}).get("core_ref") != "${{ needs.plan.outputs.core_ref }}":
+        problems.append("release.yml / checks: core_ref is not the plan's (${{ needs.plan.outputs.core_ref }})")
+    needs = call.get("needs")
+    if "plan" not in ([needs] if isinstance(needs, str) else needs or []):
+        problems.append("release.yml / checks: does not wait for the plan, whose output it reads")
+    return problems
+
+
 #: Workflows that are Mozilla's, not ours: on no branch of ours, never run (test_release_builder.py), so they are not ours to annotate.
 UPSTREAM_WORKFLOWS = ("pr-handler.yml",)
 #: What makes a step a test or a judge, read from its `run` (comment lines left out) and its `uses`: a failure of it is a red, never hidden by `continue-on-error`.
@@ -263,12 +292,12 @@ def _cases() -> list:
 
     # --- the job `checks`: a call of checks.yml, which holds every check ------------------------------------------------------------------------------
     out.append(("checks: a job of its own that CALLS checks.yml (no `if`: every candidate, a release, the weekly run and a dispatch from a latitude/* branch run it), "
-                "in parallel with the plan (it needs nothing); the node waits for the plan, the checks and the guard",
-                checks.get("uses") == "./.github/workflows/checks.yml" and "needs" not in checks and "if" not in checks
+                "after the plan, whose core it takes; the node waits for the plan, the checks and the guard",
+                checks.get("uses") == "./.github/workflows/checks.yml" and checks.get("needs") == "plan" and "if" not in checks
                 and node["needs"] == ["plan", "checks", "still-head"]
                 and build["needs"] == ["plan", "node", "py-deps-build-core", "py-deps-build-mach", "py-deps-build-lavapipe"]))
-    out.append(("checks: the call hands over the wrapper_ref the run has (main by default), reads and nothing else",
-                checks["with"] == {"wrapper_ref": "${{ inputs.wrapper_ref || 'main' }}"} and checks["permissions"] == {"contents": "read"}
+    out.append(("checks: the call hands over the wrapper_ref the run has (main by default) and the core_ref the plan resolved, reads and nothing else",
+                checks["with"] == {"wrapper_ref": "${{ inputs.wrapper_ref || 'main' }}", "core_ref": "${{ needs.plan.outputs.core_ref }}"} and checks["permissions"] == {"contents": "read"}
                 and called[True]["workflow_call"]["inputs"]["wrapper_ref"]["default"] == "main"))
     out.append(("checks: the four checks that do not read the binary are in the job `tree` of checks.yml, in this order, none conditioned on a leg",
                 [n for n in names if n in CHECKS] == list(CHECKS) and not any("matrix" in str(s.get("if", "")) for s in tree["steps"])))
@@ -382,6 +411,24 @@ def _cases() -> list:
                 all(rep["jobs"]["gate"]["with"][k] == "${{ needs.plan.outputs.%s }}" % k for k in ("core_ref", "wrapper_ref"))
                 and rep["jobs"]["publish"]["with"]["wrapper_ref"] == "${{ needs.plan.outputs.wrapper_ref }}"
                 and set(rep["jobs"]["plan"]["outputs"]) >= {"core_ref", "wrapper_ref"}))
+
+    # --- the core of checks.yml's `core-ref` is the run's, not the wrapper's pin (candidate run 45956455761) -----------------------------------------------
+    resolve = {"name": "The core", "env": {"GH_TOKEN": "t", "CORE_REF": "${{ inputs.core_ref }}"},
+               "run": 'args=(--resolve-core-ref --wrapper-ref "$W")\nif [ -n "$CORE_REF" ]; then args+=(--core-ref "$CORE_REF"); fi\npython3 .series/scripts/release_plan.py "${args[@]}"'}
+    ok_checks = {True: {"workflow_call": {"inputs": {"core_ref": {}}}}, "jobs": {"core-ref": {"steps": [resolve]}}}
+    ok_release = {"jobs": {"checks": {"needs": "plan", "with": {"core_ref": "${{ needs.plan.outputs.core_ref }}"}}}}
+    old_step = dict(resolve, env={"GH_TOKEN": "t"}, run='python3 .series/scripts/release_plan.py --resolve-core-ref --wrapper-ref "$W"')
+    out.append(("core of the run: checks.yml declares the input core_ref, every job of it that resolves the core passes --core-ref from it, and release.yml's call hands over "
+                "the plan's core_ref after the plan",
+                core_ref_problems(called, doc) == [] and any(RELEASE_PLAN.search(str(s.get("run", ""))) and "--resolve-core-ref" in str(s.get("run", ""))
+                                                              for j in called["jobs"].values() for s in j.get("steps") or [])))
+    out.append(("core of the run: red for checks.yml as it was (no input, a resolver without --core-ref) and release.yml's call as it was (no core_ref, no needs), each named",
+                core_ref_problems({True: {"workflow_call": {"inputs": {"wrapper_ref": {}}}}, "jobs": {"core-ref": {"steps": [old_step]}}},
+                                  {"jobs": {"checks": {"with": {"wrapper_ref": "main"}}}})
+                == ["checks.yml: no input core_ref", "checks.yml / core-ref / The core: no --core-ref",
+                    "checks.yml / core-ref / The core: --core-ref is not read from the input core_ref (env CORE_REF: ${{ inputs.core_ref }})",
+                    "release.yml / checks: core_ref is not the plan's (${{ needs.plan.outputs.core_ref }})", "release.yml / checks: does not wait for the plan, whose output it reads"]
+                and core_ref_problems(ok_checks, ok_release) == []))
 
     # --- the guard --------------------------------------------------------------------------------------------------------------------------------
     def head(value):

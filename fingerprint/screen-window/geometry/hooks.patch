@@ -1,3 +1,15 @@
+diff --git a/docshell/base/BrowsingContext.h b/docshell/base/BrowsingContext.h
+index 5ad1e3b3d3e3abb0026439b4b21c457d5960ddf9..8593f1088e23c67169c7fbdc4132989b96a21239 100644
+--- a/docshell/base/BrowsingContext.h
++++ b/docshell/base/BrowsingContext.h
+@@ -342,6 +342,7 @@ struct EmbedderColorSchemes {
+    * protections */                                                            \
+   FIELD(InnerSizeSpoofedForRFP, CSSIntSize,                                    \
+         {.mTopOnly = true, .mCanSet = CanSet::Unrestricted})                   \
++  FIELD(StealthFrameToTopContent, Maybe<LayoutDeviceToLayoutDeviceMatrix4x4>, {.mCanSet = CanSet::ParentOnly}) /* STEALTH-HOOK(fingerprint/screen-window/geometry) */ \
+   /* Used to propagate document's IPAddressSpace  */                           \
+   FIELD(IPAddressSpace, nsILoadInfo::IPAddressSpace,                           \
+         {.mCanSet = CanSet::ParentOnly})                                       \
 diff --git a/dom/base/nsGlobalWindowOuter.cpp b/dom/base/nsGlobalWindowOuter.cpp
 index 6f072ae4ff4528e187e2338dc5793e0881161d9c..d864090c3f9171abfe4ae73e988a4ee8fead85a4 100644
 --- a/dom/base/nsGlobalWindowOuter.cpp
@@ -46,7 +58,7 @@ index 6f072ae4ff4528e187e2338dc5793e0881161d9c..d864090c3f9171abfe4ae73e988a4ee8
  }
  
 diff --git a/dom/events/Event.cpp b/dom/events/Event.cpp
-index 98ebfdab771f69cf2d891c184511b6758261246d..1a33d0d152b15f26911142f9f493df9eaff24786 100644
+index 98ebfdab771f69cf2d891c184511b6758261246d..87f152044ee1b50de61ee52dca5b3e3de31b8444 100644
 --- a/dom/events/Event.cpp
 +++ b/dom/events/Event.cpp
 @@ -48,6 +48,8 @@
@@ -58,7 +70,13 @@ index 98ebfdab771f69cf2d891c184511b6758261246d..1a33d0d152b15f26911142f9f493df9e
  namespace mozilla::dom {
  
  Event::Event(EventTarget* aOwner, nsPresContext* aPresContext,
-@@ -672,9 +674,10 @@ Maybe<CSSDoublePoint> Event::GetScreenCoords(
+@@ -667,14 +669,15 @@ Maybe<CSSDoublePoint> Event::GetScreenCoords(
+   // are floating-point values, so convert the integer point first, then
+   // transform, and then round the result back to an integer point.
+   const LayoutDeviceIntPoint topLevelPoint = LayoutDeviceIntPoint::Round(
+-      guiEvent->mWidget->WidgetToTopLevelWidgetTransform().TransformPoint(
++      StealthTopLevelTransform(aPresContext, guiEvent->mWidget->WidgetToTopLevelWidgetTransform()).TransformPoint(  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+           aWidgetOrScreenRelativePoint));
    const CSSPoint pt = CSSPixel::FromAppUnits(
        LayoutDevicePixel::ToAppUnits(
            topLevelPoint, aPresContext->DeviceContext()->AppUnitsPerDevPixel()) +
@@ -82,6 +100,27 @@ index 2b1e2c210050c9f13c35395f9683baddfb756a07..41c8ef1419811b6556fdbb69f445f814
  
  LOCAL_INCLUDES += ["/dom/events"]
  
+diff --git a/dom/ipc/BrowserParent.cpp b/dom/ipc/BrowserParent.cpp
+index 8b4018fefdf9d149c24d43e4493aceb07a9a9b25..b56989e1f847f896ae2f8f1a7008cf4271b405da 100644
+--- a/dom/ipc/BrowserParent.cpp
++++ b/dom/ipc/BrowserParent.cpp
+@@ -157,6 +157,8 @@
+ #  include "mozilla/widget/nsWindow.h"
+ #endif  // defined(MOZ_WIDGET_ANDROID)
+ 
++#include "StealthFrameOrigin.h"  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ using namespace mozilla::dom;
+ using namespace mozilla::ipc;
+ using namespace mozilla::layers;
+@@ -2705,6 +2707,7 @@ BrowserParent::GetChildToParentConversionMatrix() {
+ void BrowserParent::SetChildToParentConversionMatrix(
+     const Maybe<LayoutDeviceToLayoutDeviceMatrix4x4>& aMatrix,
+     const ScreenRect& aRemoteDocumentRect) {
++  StealthNoteChildToParentMatrix(this, aMatrix);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+   if (mChildToParentConversionMatrix == aMatrix &&
+       mRemoteDocumentRect.isSome() &&
+       mRemoteDocumentRect.value() == aRemoteDocumentRect) {
 diff --git a/widget/gtk/moz.build b/widget/gtk/moz.build
 index f9d5cbab9ce319df7bc05edcdc1772fcd276b6c1..b09d2c5b65f3ffd707649ca22dd2c54b13ca0bdb 100644
 --- a/widget/gtk/moz.build

@@ -238,12 +238,15 @@ jobs:
   # calls on every pull request and every push to main. Nothing is first run on main (docs/decisions/ci-07 of the series). It holds the series'
   # rules, the proof that the series gives the declared tree, the births, the core's checks, the noreply identity, the plan's own tests and what does not
   # read the binary (asset names, upstream source, build files, Juggler's tests, the release scripts). A candidate on a latitude/* branch, a push to
-  # main, the weekly run and a release all run it: no `if` skips it. The `plan` and this job start together; the node waits for both.
+  # main, the weekly run and a release all run it: no `if` skips it. It starts after the `plan` (it takes the core the plan resolved); the node waits for both.
   checks:
+    needs: plan
     uses: ./.github/workflows/checks.yml
     permissions: { contents: read }
     with:
       wrapper_ref: ${{ inputs.wrapper_ref || 'main' }}
+      # The core the run tests, as the plan resolved it: checks.yml's `core-ref` must not look for the core of the wrapper's pin when the run gives another.
+      core_ref: ${{ needs.plan.outputs.core_ref }}
 
   # The guard that a newer push has not replaced this run (scripts/ci/still_head.py): after the checks, before the node, as the last step of
   # `checks` used to be. It is here and not in checks.yml: it needs `actions: write` to cancel this very run (a called workflow cannot hold more

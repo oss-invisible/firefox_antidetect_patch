@@ -25,6 +25,11 @@ file, because the size mode and the client area are private state that only
 OnWindowStateEvent sets; the hook is one call at the head of MakeFullScreen.
 Juggler's viewport pin lets go in fullscreen and comes back on leaving.
 
+### An out-of-process iframe (2026-11-27)
+An out-of-process iframe reads the declared top origin plus its own place in the top content. The parent computes the place: BrowserParent::SetChildToParentConversionMatrix calls StealthNoteChildToParentMatrix (dom/ipc/StealthFrameOrigin.h) first, which takes the frame's child-to-top-level-widget matrix and the tab's matrix, so the host's chrome offset cancels and never reaches a page (gfx::StealthFrameToTopContent). The place reaches the frame's process in StealthFrameToTopContent, a ParentOnly synced field of the frame's own BrowsingContext: a content process cannot write it, and no page can reach it (no WebIDL attribute, no JS accessor; only the C++ of StealthScreenCoords.h reads it). Events use the same place: Event::GetScreenCoords wraps the widget-to-top-level transform in StealthTopLevelTransform, so the frame's events take the matrix of the frame's place without the host's chrome, and any transform and any host chrome offset give retail's value. A fractional host chrome offset is a host dependence and dies at birth. Before the frame's first matrix (and when the tab's matrix is not a translation) the frame reads the declared top origin alone. That rule is pending measurement round 7.
+
+Test: dom/events/test/gtest/TestStealthWindowGeometry.cpp (AnOutOfProcessFrameReadsTheDeclaredOriginPlusItsOffset, ThePublishedAndThePreviousFormulaReadWrongNumbers, TheEventTransformReadsTheFramesOwnPlaceForAnyTransform, ATabMatrixThatIsNotATranslationGivesNoPlace); wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25].
+
 ## Windows fullscreen (2026-11-02)
 
 On Windows a fullscreen window was put back on the HOST's monitor after
@@ -63,12 +68,17 @@ and is converted to CSS pixels once, by Mozilla's FromAppUnits.
 
 Registration (an include in a block of ours after Mozilla's includes, or a moz.build line after the closing `]`):
 - `dom/base/nsGlobalWindowOuter.cpp`: `StealthWindowGeometry.h` (this folder) and `mozilla/dom/StealthSessionDeclaration.h` (marker of fingerprint/locale-time/session-declaration, which owns the function; the file is ours).
-- `dom/events/Event.cpp`: `StealthScreenCoords.h`. `widget/nsIWidget.cpp`: `StealthFullscreen.h`. `widget/windows/nsWindow.cpp`: `StealthFullscreenWin.h`.
+- `dom/events/Event.cpp`: `StealthScreenCoords.h`. `dom/ipc/BrowserParent.cpp`: `StealthFrameOrigin.h`. `widget/nsIWidget.cpp`: `StealthFullscreen.h`. `widget/windows/nsWindow.cpp`: `StealthFullscreenWin.h`.
 - `widget/moz.build` (SOURCES, and `EXPORTS.ipc += ["StealthMouseEventIPC.h"]`, marker of automation/input, which owns the file), `widget/gtk/moz.build` (SOURCES, X11 headers), `widget/windows/moz.build` (SOURCES, windows.h), `widget/tests/gtest/moz.build`, `dom/events/test/gtest/moz.build`: build our files and tests.
 
 Wrap of an expression (Mozilla's expression stays, inside our call):
 - `widget/nsIWidget.cpp`, nsIWidget::InfallibleMakeFullScreen: `doReposition(StealthFullscreenRectOr(*this, DesktopRect(screen->GetRectDisplayPix())))`. With the engine off, or without a declared screen, it is Mozilla's rectangle; otherwise doReposition receives the declared rectangle and Mozilla's next statement (save the new position) does what the old early return did by hand.
 - `dom/events/Event.cpp`, Event::GetScreenCoords: `... + StealthWithContentOrigin(aPresContext, <Mozilla's last summand>)` inside Mozilla's FromAppUnits: one added opening line and one Mozilla line rewritten (the last, which closes the call), the marker on it. Integer addition: A + (B + shift) is (A + B) + shift.
+
+- `dom/events/Event.cpp`, Event::GetScreenCoords: `StealthTopLevelTransform(aPresContext, guiEvent->mWidget->WidgetToTopLevelWidgetTransform()).TransformPoint(`: Mozilla's expression inside our call, one rewritten line. A fractional host chrome offset is a host dependence and dies at birth: the frame's events take the matrix of the frame's place without the host's chrome, so any transform and any host chrome offset give retail's value.
+
+Notice (the first statement of a function):
+- `dom/ipc/BrowserParent.cpp`, BrowserParent::SetChildToParentConversionMatrix: `StealthNoteChildToParentMatrix(this, aMatrix);`.
 
 Addition (a call between two Mozilla blocks):
 - `widget/windows/nsWindow.cpp`, nsWindow::OnWindowPosChanging: `mozilla::widget::StealthHoldDeclaredFullscreen(*this, info);` between the forced-fullscreen block and the DWM block; nsWindow.h is the tag's.
@@ -79,6 +89,9 @@ Member:
 Anchors (a call right after a Mozilla statement, listed with their reason in HOOKS.json):
 - `dom/base/nsGlobalWindowOuter.cpp`: GetOuterSize and GetScreenXY after Mozilla's resistFingerprinting check (GetScreenXY after the tree-owner check too, passing its local), GetMozInnerScreenXOuter/YOuter after `nsRect r = GetInnerScreenRect();`. A guard at the head of these functions would answer before Mozilla's resistFingerprinting check, which the core only defaults to false (an extra_prefs overlay can turn it on), so they stay where they are.
 - `widget/windows/nsWindow.cpp`, case WM_GETMINMAXINFO: after the four ptMinTrackSize/ptMaxTrackSize assignments, the last statement of the block (the one exception of rule 5, G30).
+
+Declared exception of kind macro (approved by the pm):
+- `docshell/base/BrowsingContext.h`: the FIELD StealthFrameToTopContent (the matrix of the frame's place in the top content, computed by the parent, on the frame's own BrowsingContext; ParentOnly, so a content process cannot write it and no page can reach it).
 
 Rewritten line, a declared exception of kind expression (approved by the pm):
 - `dom/base/nsGlobalWindowOuter.cpp`, CreateNativeGlobalForInner: the two arguments `Top()->GetLanguageOverride()` / `GetTimezoneOverride()` of `xpc::InitGlobalObjectOptions` are replaced by `GetDeclaredRealmLanguage(aDocument), GetDeclaredRealmTimezone(aDocument)` with a marker comment line of fingerprint/locale-time/session-declaration, which owns the functions. They are the document's context language and zone, or the session's when the context carries none, including a document with no BrowsingContext. Mozilla's two expressions dereference the BrowsingContext and are evaluated before any code of ours, so a wrap of the call or of the arguments would crash for a document with no context; no add-only form can substitute a value for them or stop their evaluation, and a hook before the statement cannot skip it.
