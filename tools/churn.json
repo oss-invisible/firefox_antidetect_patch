@@ -3572,6 +3572,20 @@
    "which": []
   },
   {
+   "key": "H|fingerprint/screen-window/geometry|docshell/base/BrowsingContext.h|struct EmbedderColorSchemes {|16b6edbe1f00",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "docshell/base/BrowsingContext.h",
+   "hunk": 1,
+   "churn": 5,
+   "which": [
+    "153",
+    "156",
+    "157",
+    "158",
+    "159"
+   ]
+  },
+  {
    "key": "H|fingerprint/screen-window/geometry|dom/base/nsGlobalWindowOuter.cpp||3acdfcab294b",
    "folder": "fingerprint/screen-window/geometry",
    "file": "dom/base/nsGlobalWindowOuter.cpp",
@@ -3624,7 +3638,7 @@
    ]
   },
   {
-   "key": "H|fingerprint/screen-window/geometry|dom/events/Event.cpp|Maybe<CSSDoublePoint> Event::GetScreenCoords(|184917bf1aa6",
+   "key": "H|fingerprint/screen-window/geometry|dom/events/Event.cpp|Maybe<CSSDoublePoint> Event::GetScreenCoords(|85527218fdaf",
    "folder": "fingerprint/screen-window/geometry",
    "file": "dom/events/Event.cpp",
    "hunk": 2,
@@ -3636,6 +3650,22 @@
    "folder": "fingerprint/screen-window/geometry",
    "file": "dom/events/test/gtest/moz.build",
    "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.cpp||d003906df407",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.cpp",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.cpp|BrowserParent::GetChildToParentConversionMatrix() {|53118854923b",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.cpp",
+   "hunk": 2,
    "churn": 0,
    "which": []
   },

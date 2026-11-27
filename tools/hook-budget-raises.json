@@ -245,5 +245,26 @@
   "date": "2026-11-26",
   "test": "xpcshell:js/xpconnect/tests/unit/test_stealth_hybrid_xrays_options.js#run_test",
   "budget": "removed"
+ },
+ {
+  "file": "dom/events/Event.cpp",
+  "from": 4,
+  "to": 5,
+  "folder": "fingerprint/screen-window/geometry",
+  "reason": "a fractional host chrome offset is a host dependence and dies at birth: the transform of Event::GetScreenCoords is wrapped (StealthTopLevelTransform), so the frame's events take the matrix of the frame's place without the host's chrome; one rewritten line",
+  "decided_by": "pm 27/11, out-of-process frame origin of the 71",
+  "date": "2026-11-27",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/events/Event.cpp",
+  "from": 1,
+  "to": 2,
+  "folder": "fingerprint/screen-window/geometry",
+  "reason": "a fractional host chrome offset is a host dependence and dies at birth: the transform of Event::GetScreenCoords is wrapped (StealthTopLevelTransform), so the frame's events take the matrix of the frame's place without the host's chrome; one rewritten line",
+  "decided_by": "pm 27/11, out-of-process frame origin of the 71",
+  "date": "2026-11-27",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]",
+  "budget": "removed"
  }
 ]
