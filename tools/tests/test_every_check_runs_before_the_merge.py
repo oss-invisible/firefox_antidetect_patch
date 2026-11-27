@@ -43,7 +43,7 @@ CHECK_COMMANDS = {
     # series-02: on a port, ports/range-diff.txt is what the two series give (the job decides first, and is green on any run that is not a port)
     "range-diff": ["tools/engine.py range-diff --decide", "tools/engine.py range-diff --source"],
     # the core the wrapper pins, resolved once for the wheelhouse and the checkout of rebuilds (ci-05)
-    "core-ref": ["release_plan.py --resolve-core-ref"],
+    "core-ref": ["--resolve-core-ref --wrapper-ref", 'release_plan.py "${args[@]}"'],
     # series.yml's `noreply-identity`
     "noreply-identity": ["ci_noreply_identity.py"],
     # release.yml's plan (its own tests) and checks
