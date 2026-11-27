@@ -23,6 +23,7 @@ const char* const kPrefs[] = {
     "zoom.stealth.fpp.hw_seed",           "zoom.stealth.screen.frame_border",
     "zoom.stealth.screen.maximized_ui",   "zoom.stealth.screen.popup_ui",
     "zoom.stealth.screen.popup_position",
+    "zoom.stealth.screen.popup_client_top",
 };
 
 // A declared window frame like retail's at 100%, the engine on.
@@ -32,6 +33,7 @@ void Declare() {
   Preferences::SetInt(kPrefs[2], 85);
   Preferences::SetInt(kPrefs[3], 62);
   Preferences::SetInt(kPrefs[4], 26);
+  Preferences::SetInt(kPrefs[5], 31);
 }
 
 nsPoint Declared(const Maybe<LayoutDeviceIntPoint>& aPopup, bool aFullscreen) {
@@ -281,4 +283,114 @@ TEST(StealthWindowGeometry, ATabMatrixThatIsNotATranslationGivesNoPlace)
   EXPECT_FALSE(gfx::StealthFrameToTopContent(FrameMatrix(f, t), deep));
   // The translation itself is.
   EXPECT_TRUE(gfx::StealthFrameToTopContent(FrameMatrix(f, t), TabMatrix(t)));
+}
+
+namespace {
+
+// Round 5 of the window geometry captures (WINDOW_GEOMETRY_POPUP_FRAME.csv):
+// the declared window frame at each scale. The border and the popup client top
+// are retail's; the maximized UI is the normal bar's height; the popup UI is
+// not asserted by the client origin (it only has to differ from the client top,
+// so that D and the client origin are different values).
+gfx::StealthWindowFrame FrameAt(int32_t aBorder, int32_t aMaximizedUi,
+                                int32_t aClientTop) {
+  return gfx::StealthWindowFrame{aBorder, aMaximizedUi, aClientTop + 31, 26,
+                                 aClientTop};
+}
+
+struct ScaleFrame {
+  double mScale;
+  int32_t mBorder;
+  int32_t mMaximizedUi;
+  int32_t mClientTop;
+};
+
+const ScaleFrame kScaleFrames[] = {
+    {1.0, 8, 85, 31},
+    {1.25, 9, 106, 38},
+    {1.5, 11, 127, 45},
+    {2.0, 13, 170, 58},
+};
+
+}  // namespace
+
+// The declared client origin of the top-level window, at the 4 scales: (0, 0)
+// for the maximized window, the popup's position plus (border, client top) for
+// a popup, (0, 0) in fullscreen.
+TEST(StealthWindowGeometry, TheDeclaredClientOriginIsTheWindowsClientAreaTopLeft)
+{
+  for (const ScaleFrame& f : kScaleFrames) {
+    SCOPED_TRACE(f.mScale);
+    const gfx::StealthWindowFrame frame =
+        FrameAt(f.mBorder, f.mMaximizedUi, f.mClientTop);
+    // The maximized window is (-border, -border), and its client area starts a
+    // border in: (0, 0), computed from the declaration.
+    EXPECT_EQ(gfx::StealthDeclaredClientOrigin(frame, Nothing(), false),
+              LayoutDeviceIntPoint(0, 0));
+    // Popups, from the captured rows: (4, 4) and (100, 80).
+    EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                  frame, Some(LayoutDeviceIntPoint(4, 4)), false),
+              LayoutDeviceIntPoint(4 + f.mBorder, 4 + f.mClientTop));
+    EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                  frame, Some(LayoutDeviceIntPoint(100, 80)), false),
+              LayoutDeviceIntPoint(100 + f.mBorder, 80 + f.mClientTop));
+    // Fullscreen, main or popup: the content is the screen.
+    EXPECT_EQ(gfx::StealthDeclaredClientOrigin(frame, Nothing(), true),
+              LayoutDeviceIntPoint(0, 0));
+    EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                  frame, Some(LayoutDeviceIntPoint(100, 80)), true),
+              LayoutDeviceIntPoint(0, 0));
+  }
+  // The device values of the captured rows, by hand.
+  const gfx::StealthWindowFrame at1 = FrameAt(8, 85, 31);
+  EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                at1, Some(LayoutDeviceIntPoint(4, 4)), false),
+            LayoutDeviceIntPoint(12, 35));
+  EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                at1, Some(LayoutDeviceIntPoint(100, 80)), false),
+            LayoutDeviceIntPoint(108, 111));
+  EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                FrameAt(9, 106, 38), Some(LayoutDeviceIntPoint(4, 4)), false),
+            LayoutDeviceIntPoint(13, 42));
+  EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                FrameAt(11, 127, 45), Some(LayoutDeviceIntPoint(4, 4)), false),
+            LayoutDeviceIntPoint(15, 49));
+  EXPECT_EQ(gfx::StealthDeclaredClientOrigin(
+                FrameAt(13, 170, 58), Some(LayoutDeviceIntPoint(4, 4)), false),
+            LayoutDeviceIntPoint(17, 62));
+}
+
+// An out-of-process frame that has not received its first matrix: the page
+// reads D + offsetInTop, with offsetInTop = declared client origin - D (what
+// StealthContentOriginShift sets). That is the client origin, and it is not D,
+// the published reading (the negative control: D is the top content origin, the
+// whole bar below the client origin).
+TEST(StealthWindowGeometry, AFrameBeforeItsFirstMatrixReadsTheClientOriginNotD)
+{
+  for (const ScaleFrame& f : kScaleFrames) {
+    SCOPED_TRACE(f.mScale);
+    const gfx::StealthWindowFrame frame =
+        FrameAt(f.mBorder, f.mMaximizedUi, f.mClientTop);
+    const Maybe<LayoutDeviceIntPoint> popups[] = {
+        Nothing(), Some(LayoutDeviceIntPoint(4, 4)),
+        Some(LayoutDeviceIntPoint(100, 80))};
+    for (const Maybe<LayoutDeviceIntPoint>& popup : popups) {
+      const LayoutDeviceIntPoint d =
+          gfx::StealthDeclaredContentOrigin(frame, popup, false);
+      const LayoutDeviceIntPoint client =
+          gfx::StealthDeclaredClientOrigin(frame, popup, false);
+      const LayoutDeviceIntPoint offsetInTop = client - d;
+      EXPECT_EQ(d + offsetInTop, client);
+      EXPECT_NE(d + offsetInTop, d);
+    }
+    // The maximized window by hand: D = (0, maximized UI), client (0, 0).
+    EXPECT_EQ(gfx::StealthDeclaredContentOrigin(frame, Nothing(), false),
+              LayoutDeviceIntPoint(0, f.mMaximizedUi));
+    // In fullscreen D is the client origin, so nothing moves.
+    const LayoutDeviceIntPoint fd =
+        gfx::StealthDeclaredContentOrigin(frame, Nothing(), true);
+    EXPECT_EQ(fd + (gfx::StealthDeclaredClientOrigin(frame, Nothing(), true) -
+                    fd),
+              LayoutDeviceIntPoint(0, 0));
+  }
 }

@@ -142,6 +142,10 @@ struct StealthWindowFrame {
   int32_t mPopupUi;
   // A popup opened without left/top: where it is put, on both axes.
   int32_t mPopupPosition;
+  // A popup: from the window top (border included) to the top of its client
+  // area. An out-of-process frame that has not received its first matrix reads
+  // the client origin: the popup's position plus (mBorder, mPopupClientTop).
+  int32_t mPopupClientTop;
 };
 Maybe<StealthWindowFrame> StealthDeclaredWindowFrame();
 
@@ -150,6 +154,40 @@ Maybe<StealthWindowFrame> StealthDeclaredWindowFrame();
  * each side. Device pixels; the caller divides by its window's scale.
  */
 Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow();
+
+/**
+ * The top-left of the maximized main window: (-border, -border). Pure: the one
+ * place the maximized window's position is written, read by
+ * StealthDeclaredMaximizedWindow and StealthDeclaredClientOrigin.
+ */
+LayoutDeviceIntPoint StealthMaximizedWindowTopLeft(
+    const StealthWindowFrame& aFrame);
+
+/**
+ * The declared content origin D on screen, in device pixels: (0, 0) in
+ * fullscreen; a popup's position plus (border, popup UI); the maximized
+ * window's content (0, maximized UI) otherwise. Pure. The one place D is
+ * written: StealthDeclaredOriginShift and the callers that need D itself ask
+ * here.
+ */
+LayoutDeviceIntPoint StealthDeclaredContentOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen);
+
+/**
+ * The declared CLIENT origin on screen, in device pixels: the top-left of the
+ * top-level window's client area, which is where an out-of-process iframe that
+ * has laid out but has not received its first matrix reads mozInnerScreenX/Y
+ * (round 7 of the retail captures, WINDOW_GEOMETRY_FRAME_EARLY.csv: Mozilla's
+ * matrix is then Translation(0), so the frame reads the window's client
+ * origin). Fullscreen: (0, 0), the content is the screen. A popup (its real
+ * position in aPopupWindowOrigin): that position plus (border, popup client
+ * top). The maximized main window: the declared maximized window's top-left
+ * plus (border, border), which is (0, 0). Pure.
+ */
+LayoutDeviceIntPoint StealthDeclaredClientOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen);
 
 /**
  * Does a window answer the DECLARED outer size, or its own real one?

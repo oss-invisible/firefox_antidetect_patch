@@ -231,6 +231,10 @@ void StealthAssertDeclarationsComplete() {
        []() { return StaticPrefs::zoom_stealth_screen_popup_ui(); }, 1},
       {"zoom.stealth.screen.popup_position",
        []() { return StaticPrefs::zoom_stealth_screen_popup_position(); }, 0},
+      // The popup's client top, added with the out-of-process frame's
+      // pre-matrix origin: a popup's client area always starts below its top.
+      {"zoom.stealth.screen.popup_client_top",
+       []() { return StaticPrefs::zoom_stealth_screen_popup_client_top(); }, 1},
       {"zoom.stealth.screen.avail_device_width",
        []() { return StaticPrefs::zoom_stealth_screen_avail_device_width(); },
        320},
@@ -360,9 +364,10 @@ Maybe<StealthWindowFrame> StealthDeclaredWindowFrame() {
       StaticPrefs::zoom_stealth_screen_frame_border(),
       StaticPrefs::zoom_stealth_screen_maximized_ui(),
       StaticPrefs::zoom_stealth_screen_popup_ui(),
-      StaticPrefs::zoom_stealth_screen_popup_position()};
+      StaticPrefs::zoom_stealth_screen_popup_position(),
+      StaticPrefs::zoom_stealth_screen_popup_client_top()};
   if (frame.mBorder < 0 || frame.mMaximizedUi < 1 || frame.mPopupUi < 1 ||
-      frame.mPopupPosition < 0) {
+      frame.mPopupPosition < 0 || frame.mPopupClientTop < 1) {
     // Unreachable in practice: the gate refuses at launch in the parent, so a
     // process that is serving pages has these. Kept as a refusal rather than a
     // fallback, because the day it becomes reachable the right behaviour is
@@ -385,7 +390,40 @@ Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow() {
     return Nothing();
   }
   const int32_t b = frame->mBorder;
-  return Some(LayoutDeviceIntRect(-b, -b, w + 2 * b, h + 2 * b));
+  const LayoutDeviceIntPoint topLeft = StealthMaximizedWindowTopLeft(*frame);
+  return Some(LayoutDeviceIntRect(topLeft.x, topLeft.y, w + 2 * b, h + 2 * b));
+}
+
+LayoutDeviceIntPoint StealthMaximizedWindowTopLeft(
+    const StealthWindowFrame& aFrame) {
+  return LayoutDeviceIntPoint(-aFrame.mBorder, -aFrame.mBorder);
+}
+
+LayoutDeviceIntPoint StealthDeclaredContentOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen) {
+  // A fullscreen window's content is the screen; the maximized window's
+  // starts at the screen's left edge, the UI height below its top; a popup's
+  // starts a border in and the popup UI down from wherever the popup really is.
+  return aFullscreen ? LayoutDeviceIntPoint(0, 0)
+         : aPopupWindowOrigin
+             ? *aPopupWindowOrigin +
+                   LayoutDeviceIntPoint(aFrame.mBorder, aFrame.mPopupUi)
+             : LayoutDeviceIntPoint(0, aFrame.mMaximizedUi);
+}
+
+LayoutDeviceIntPoint StealthDeclaredClientOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen) {
+  if (aFullscreen) {
+    return LayoutDeviceIntPoint(0, 0);
+  }
+  if (aPopupWindowOrigin) {
+    return *aPopupWindowOrigin +
+           LayoutDeviceIntPoint(aFrame.mBorder, aFrame.mPopupClientTop);
+  }
+  return StealthMaximizedWindowTopLeft(aFrame) +
+         LayoutDeviceIntPoint(aFrame.mBorder, aFrame.mBorder);
 }
 
 bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter) {
@@ -428,15 +466,8 @@ Maybe<nsPoint> StealthDeclaredOriginShift(
   if (frame.isNothing()) {
     return Nothing();
   }
-  // A fullscreen window's content is the screen; the maximized window's
-  // starts at the screen's left edge, the UI height below its top; a popup's
-  // starts a border in and the popup UI down from wherever the popup really is.
   const LayoutDeviceIntPoint declared =
-      aFullscreen ? LayoutDeviceIntPoint(0, 0)
-      : aPopupWindowOrigin
-          ? *aPopupWindowOrigin +
-                LayoutDeviceIntPoint(frame->mBorder, frame->mPopupUi)
-          : LayoutDeviceIntPoint(0, frame->mMaximizedUi);
+      StealthDeclaredContentOrigin(*frame, aPopupWindowOrigin, aFullscreen);
   return Some(LayoutDevicePixel::ToAppUnits(declared, aAppUnitsPerDevPixel) -
               aRealContentOrigin);
 }

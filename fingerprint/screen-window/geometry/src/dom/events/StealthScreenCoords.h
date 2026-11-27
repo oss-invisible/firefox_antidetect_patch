@@ -102,21 +102,6 @@ inline Maybe<nsPoint> StealthContentOriginShift(nsPresContext* aPresContext) {
     return Nothing();
   }
   const int32_t auPerDevPx = aPresContext->AppUnitsPerDevPixel();
-  // The anchor is the root widget's screen offset less the frame's own place
-  // in the top, so the page reads the declared top origin plus that place
-  // (Firefox's rounded device offset of the frame, host chrome cancelled).
-  // The place is the parent's matrix for an out-of-process iframe. Before the
-  // frame's first matrix, and when the tab's matrix is not a translation, there
-  // is none and the place is (0, 0): the frame then reads the declared top
-  // origin. That pre-matrix rule is pending round 7 of the retail capture,
-  // which measures it. The host's real chrome offset is never used: it would
-  // leak it.
-  const Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> rel =
-      StealthFrameToTopContentOf(aPresContext);
-  const LayoutDeviceIntPoint offsetInTop =
-      rel ? gfx::StealthFrameOffsetInTop(*rel) : LayoutDeviceIntPoint();
-  const nsPoint real = LayoutDevicePixel::ToAppUnits(
-      rootWidget->WidgetToScreenOffset() - offsetInTop, auPerDevPx);
   // A popup is declared from its REAL position: the outer rect of the
   // top-level window, which BrowserChild receives from the parent - also in an
   // out-of-process iframe, where it arrives from the embedder. It is the same
@@ -140,6 +125,43 @@ inline Maybe<nsPoint> StealthContentOriginShift(nsPresContext* aPresContext) {
   // In fullscreen the content is the screen. Same source as Fullscreen() in a
   // content process: the puppet widget's size mode.
   const bool fullscreen = rootWidget->SizeMode() == nsSizeMode_Fullscreen;
+  // The anchor is the root widget's screen offset less the frame's own place
+  // in the top, so the page reads the declared top origin plus that place
+  // (Firefox's rounded device offset of the frame, host chrome cancelled).
+  // The place is the parent's matrix for an out-of-process iframe. The host's
+  // real chrome offset is never used: it would leak it.
+  const Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> rel =
+      StealthFrameToTopContentOf(aPresContext);
+  LayoutDeviceIntPoint offsetInTop;
+  if (rel) {
+    offsetInTop = gfx::StealthFrameOffsetInTop(*rel);
+  } else {
+    BrowserChild* rootChild = rootWidget->GetOwningBrowserChild();
+    if (rootChild && !rootChild->IsTopLevel()) {
+      // An out-of-process iframe with no matrix: it has laid out but has not
+      // received its first one (or the tab's matrix is not a translation).
+      // Retail reads the CLIENT origin of its top-level window there: Mozilla's
+      // matrix is Translation(0), so the frame's reading is the window's
+      // client origin (round 7 of the retail captures,
+      // WINDOW_GEOMETRY_FRAME_EARLY.csv: (0, 0) for the maximized window at
+      // the 4 scales, the popup's position plus (border, client top) for a
+      // popup, its client top measured in round 5,
+      // WINDOW_GEOMETRY_POPUP_FRAME.csv; (0, 0) in fullscreen). The page reads D + offsetInTop, so the
+      // place to take out of the anchor is the declared client origin less D:
+      // the reading is then the declared client origin, whatever Mozilla's
+      // matrix and the host's chrome are, and nothing of the host reaches it.
+      const Maybe<gfx::StealthWindowFrame> frame =
+          gfx::StealthDeclaredWindowFrame();
+      if (!frame) {
+        return Nothing();
+      }
+      offsetInTop =
+          gfx::StealthDeclaredClientOrigin(*frame, popupOrigin, fullscreen) -
+          gfx::StealthDeclaredContentOrigin(*frame, popupOrigin, fullscreen);
+    }
+  }
+  const nsPoint real = LayoutDevicePixel::ToAppUnits(
+      rootWidget->WidgetToScreenOffset() - offsetInTop, auPerDevPx);
   return gfx::StealthDeclaredOriginShift(real, popupOrigin, fullscreen,
                                          auPerDevPx);
 }

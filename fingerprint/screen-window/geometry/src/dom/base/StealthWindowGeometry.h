@@ -27,6 +27,7 @@
 #include "mozilla/DimensionRequest.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/Maybe.h"
+#include "mozilla/PresShell.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/dom/BrowserChild.h"
 #include "mozilla/dom/BrowsingContext.h"
@@ -63,6 +64,16 @@ inline Maybe<nsPoint> StealthShiftOf(nsGlobalWindowOuter& aWindow) {
   nsIDocShell* docShell = aWindow.GetDocShell();
   RefPtr<nsPresContext> pc = docShell ? docShell->GetPresContext() : nullptr;
   return StealthContentOriginShift(pc);
+}
+
+// Has the window's document a root frame yet? Mozilla's GetInnerScreenRect
+// answers an empty rect when its pres shell has none (nsGlobalWindowOuter.cpp,
+// GetInnerScreenRect): before the first layout, as seen by an inline script at
+// the top of <head>.
+inline bool StealthHasRootFrame(nsGlobalWindowOuter& aWindow) {
+  nsIDocShell* docShell = aWindow.GetDocShell();
+  PresShell* presShell = docShell ? docShell->GetPresShell() : nullptr;
+  return presShell && presShell->GetRootFrame();
 }
 
 }  // namespace
@@ -192,8 +203,18 @@ inline bool StealthScreenXY(nsGlobalWindowOuter& aWindow,
 // contradiction this patch exists to remove, moved one level down. By adding
 // the shift to the REAL rect of the window, the offset between frames stays
 // true and the relation holds at any depth.
+//
+// Before the document has a root frame every frame reads 0, Mozilla's own
+// answer (round 7 of the retail captures, WINDOW_GEOMETRY_FRAME_EARLY.csv: an
+// inline script at the top of <head> reads mozInnerScreenX/Y = (0, 0) in the
+// top document and in every frame). Adding the shift to that empty rect would
+// answer the shift alone, a value derived from the host's real origin, so
+// Nothing() is answered and Mozilla's 0 stands.
 inline Maybe<float> StealthMozInnerScreenX(nsGlobalWindowOuter& aWindow,
                                            const nsRect& aRect) {
+  if (!StealthHasRootFrame(aWindow)) {
+    return Nothing();
+  }
   if (const auto shift = StealthShiftOf(aWindow)) {
     return Some(nsPresContext::AppUnitsToFloatCSSPixels(aRect.x + shift->x));
   }
@@ -206,6 +227,9 @@ inline Maybe<float> StealthMozInnerScreenX(nsGlobalWindowOuter& aWindow,
 // own top.
 inline Maybe<float> StealthMozInnerScreenY(nsGlobalWindowOuter& aWindow,
                                            const nsRect& aRect) {
+  if (!StealthHasRootFrame(aWindow)) {
+    return Nothing();
+  }
   if (const auto shift = StealthShiftOf(aWindow)) {
     return Some(nsPresContext::AppUnitsToFloatCSSPixels(aRect.y + shift->y));
   }

@@ -243,6 +243,16 @@
   value: -1
   mirror: always
 
+# A popup: from the window top (border included) to the top of its client area,
+# in device pixels (31, 38, 45, 58 at 100/125/150/200%; round 5 of the retail
+# captures, WINDOW_GEOMETRY_POPUP_FRAME.csv). popup_ui above is the content top;
+# this is the client top, the origin an out-of-process frame reads before its
+# first matrix.
+- name: zoom.stealth.screen.popup_client_top
+  type: RelaxedAtomicInt32
+  value: -1
+  mirror: always
+
 - name: zoom.stealth.screen.popup_position
   type: RelaxedAtomicInt32
   value: -1

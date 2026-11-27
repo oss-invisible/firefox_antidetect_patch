@@ -27,9 +27,9 @@
   "widget/windows/StealthFullscreenWin.h": "100644"
  },
  "sha256": {
-  "dom/base/StealthWindowGeometry.h": "77d6c8e40803f0b74aba5eea29a49447e881b56a0d2c1647dc02c3b9e9e8ce97",
-  "dom/events/StealthScreenCoords.h": "7505af815299d8384705ef587f443771722cd988e0f759d6ffd53602336f1034",
-  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "b9e5e3d6535a3c0e8a259075712743bb105ef37ba34f5a7ba7144e7d18ef3574",
+  "dom/base/StealthWindowGeometry.h": "3d48ca794fcc85eeac3972bf580c0c6b85def0f048dae49832a0cb3f679d1196",
+  "dom/events/StealthScreenCoords.h": "df41bfce4ee2e34736156388ab166a8079390f516ce0812a45ef12c5f5604d5d",
+  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "a1ebe4efc1ca25f5b37b0c7a95623fa847d30e418874ae49afc0df35f59417b4",
   "dom/ipc/StealthFrameOrigin.h": "c31653abd9330b87961223b9ed44f1e1c2fae7f970ad6e5d3c1114900f449812",
   "widget/StealthFullscreen.cpp": "dc70186a64ce74e7b6884b4b9070c138a205ae8aecadc61726d939e25b0208cf",
   "widget/StealthFullscreen.h": "729c754fe0556d42eb0c4b260778704b18e6589bd45cdacd22139828d4d64b8d",
