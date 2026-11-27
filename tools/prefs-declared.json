@@ -1,1 +1,10 @@
-[]
+[
+ {
+  "name": "zoom.stealth.screen.popup_client_top",
+  "branch": "default",
+  "type": "int",
+  "value": -1,
+  "reason": "the popup's client top, device px, declared by the core (31/38/45/58, retail round 5); the client origin an out-of-process frame reads before its first matrix",
+  "decided_by": "pm 27/11, out-of-process frame origin of the 71"
+ }
+]
