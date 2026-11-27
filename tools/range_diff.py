@@ -203,7 +203,7 @@ def stack(source, side: "Series", build_stack) -> tuple:
     return layers[0][1], layers[-1][1]
 
 
-GIT_FIXED = ("-c", "color.ui=never", "-c", "diff.renames=false", "-c", "diff.algorithm=default", "-c", "diff.context=3",
+GIT_FIXED = ("-c", "safe.bareRepository=all", "-c", "color.ui=never", "-c", "diff.renames=false", "-c", "diff.algorithm=default", "-c", "diff.context=3",
              "-c", "diff.interHunkContext=0", "-c", "diff.indentHeuristic=true", "-c", "core.quotepath=off", "-c", "core.abbrev=" + ABBREV,
              "-c", "i18n.logOutputEncoding=UTF-8")
 
@@ -283,7 +283,9 @@ def main(argv, build_stack) -> int:
                        "add --source <repo>, a repository that has the two Mozilla tags (--fetch makes it)", RULE_ID), file=sys.stderr)
             return 2
         import tempfile
-        with tempfile.TemporaryDirectory() as tmp:
+        # a scratch directory that cannot be removed (a file in it is still held by a scanner, an indexer, another git: Windows refuses) is
+        # left behind; it is never the reason the file that was computed is given up
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             old_root = extract_ref(a.series, a.old_series, Path(tmp) / "old")
             series, old = Series(a.series, "this series"), Series(old_root, "the old series (%s)" % a.old_series)
             if a.fetch:

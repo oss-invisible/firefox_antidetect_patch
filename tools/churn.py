@@ -100,7 +100,7 @@ def default_releases(base: str) -> list:
 def git(source, *args, check=True, input_bytes=None) -> subprocess.CompletedProcess:
     # GIT_NO_LAZY_FETCH: the repository of the tags holds the commits and trees of the nine tags and the files the series patches, nothing
     # else; an object it lacks is an error here, never a silent fetch (and never a file that reads as absent).
-    done = subprocess.run(["git", "--literal-pathspecs", "-C", str(source), "-c", "core.quotepath=off",
+    done = subprocess.run(["git", "--literal-pathspecs", "-C", str(source), "-c", "core.quotepath=off", "-c", "safe.bareRepository=all",
                            *args], capture_output=True, input=input_bytes, env=dict(os.environ, GIT_NO_LAZY_FETCH="1"))
     if check and done.returncode:
         raise ChurnError(failed("git %s in %s" % (" ".join(args), source), "git exited with %d: %s"

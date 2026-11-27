@@ -16,6 +16,7 @@ lines the new tag changed. The tests prove
 import difflib
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -318,3 +319,59 @@ def test_fetch_never_turns_a_working_repository_into_a_partial_clone(world, mozi
     assert run(world, mozilla, "--fetch") == 2
     assert "partial clone" in capsys.readouterr().err
     assert "partialclone" not in git(mozilla, "config", "--local", "--list").lower()
+
+
+# ---------------------------------------------------------------------------------------------------------------- what the machine does around the command
+def test_a_scratch_directory_that_cannot_be_removed_does_not_decide_the_result(world, mozilla, monkeypatch, capsys):
+    """The old series is written to a scratch directory for the length of the command. On Windows a file there that a scanner, an indexer or
+    another git still holds open makes the removal of the directory fail; the file the command computed is right and is not given up for it."""
+    base = generated(world, mozilla, capsys)
+    held, scratch = [], []
+    real = range_diff.compute
+
+    def computing(series, old, source, build_stack):
+        held.append(open(old.root / "SERIES", "rb"))        # another process has the file open while the command ends
+        scratch.append(old.root.parent)
+        return real(series, old, source, build_stack)
+
+    monkeypatch.setattr(range_diff, "compute", computing)
+    try:
+        assert run(world, mozilla) == 0
+        assert capsys.readouterr().out.encode() == base.encode()
+    finally:
+        for handle in held:
+            handle.close()
+        for left in scratch:
+            shutil.rmtree(left, ignore_errors=True)
+
+
+def test_the_layer_stack_does_not_give_up_its_commits_for_a_scratch_file_it_cannot_remove(world, mozilla, monkeypatch):
+    """engine.build_stack keeps its index in a scratch directory; the commits it wrote are the result, whatever the directory's removal does."""
+    expected = engine.build_stack(mozilla, NEW, root=world)
+    held, scratch = [], []
+    real = engine.add_files
+
+    def adding(source, folder, manifest, env, root=None):
+        scratch.append(Path(env["GIT_INDEX_FILE"]).parent)
+        held.append(open(scratch[-1] / "held", "wb"))      # a file of the scratch directory is held open by another process
+        return real(source, folder, manifest, env, root)
+
+    monkeypatch.setattr(engine, "add_files", adding)
+    try:
+        assert engine.build_stack(mozilla, NEW, root=world) == expected
+    finally:
+        for handle in held:
+            handle.close()
+        for left in scratch:
+            shutil.rmtree(left, ignore_errors=True)
+
+
+def test_the_result_does_not_depend_on_the_users_git_configuration_for_a_bare_repository(world, mozilla, tmp_path, monkeypatch, capsys):
+    """The repository of the tags that --fetch makes is a bare one of its own; a machine whose git refuses to find a bare repository by
+    itself (safe.bareRepository=explicit) gets the same file."""
+    base = generated(world, mozilla, capsys)
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", "safe.bareRepository")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "explicit")
+    assert generated(world, tmp_path / "cache.git", capsys, "--fetch") == base
+    assert generated(world, tmp_path / "cache.git", capsys, "--fetch") == base

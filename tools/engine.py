@@ -183,7 +183,7 @@ def stop_if_not_marked(error: SystemExit, next_command: str) -> SystemExit:
 
 
 def git(source: Path, *args: str, env=None, input_bytes=None) -> bytes:
-    return subprocess.run(["git", "-C", str(source), *args], check=True,
+    return subprocess.run(["git", "-C", str(source), "-c", "safe.bareRepository=all", *args], check=True,
                           capture_output=True, env=env, input=input_bytes).stdout
 
 
@@ -668,14 +668,16 @@ def build_stack(source: Path, base: str, root: Path | None = None, missing_ok: b
     # a seal records (source_commit) reproducible by anyone who has main and the tag,
     # although it lives on no remote.
     when = git(source, "log", "-1", "--format=%cI", parent).decode().strip()
-    with tempfile.TemporaryDirectory() as tmp:
+    # The commits are the result: a scratch file Windows will not remove (a scanner or another process still holds it) is left behind,
+    # it does not make the stack an error.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         env = dict(os.environ, GIT_INDEX_FILE=str(Path(tmp) / "index"), **IDENTITY,
                    GIT_AUTHOR_DATE=when, GIT_COMMITTER_DATE=when)
         git(source, "read-tree", parent, env=env)
         for folder in listed:
             patch = root / folder / "hooks.patch"
             if patch.exists():
-                done = subprocess.run(["git", "-C", str(source), "apply", "--cached", "--whitespace=nowarn",
+                done = subprocess.run(["git", "-C", str(source), "-c", "safe.bareRepository=all", "apply", "--cached", "--whitespace=nowarn",
                                        str(patch)], capture_output=True, env=env)
                 if done.returncode:
                     raise SystemExit(halt(fail(
