@@ -2901,7 +2901,7 @@
    "which": []
   },
   {
-   "key": "H|fingerprint/locale-time/session-declaration|dom/base/nsGlobalWindowOuter.cpp||94eadc3baac0",
+   "key": "H|fingerprint/locale-time/session-declaration|dom/base/nsGlobalWindowOuter.cpp||4893b1e84931",
    "folder": "fingerprint/locale-time/session-declaration",
    "file": "dom/base/nsGlobalWindowOuter.cpp",
    "hunk": 1,
@@ -3572,62 +3572,97 @@
    "which": []
   },
   {
-   "key": "H|fingerprint/screen-window/geometry|dom/base/nsGlobalWindowOuter.cpp||3acdfcab294b",
+   "key": "H|fingerprint/screen-window/geometry|browser/actors/ContextMenuParent.sys.mjs||5f89083c86b0",
    "folder": "fingerprint/screen-window/geometry",
-   "file": "dom/base/nsGlobalWindowOuter.cpp",
+   "file": "browser/actors/ContextMenuParent.sys.mjs",
    "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|browser/actors/ContextMenuParent.sys.mjs|export class ContextMenuParent extends JSWindowActorParent {|4978e35a00bb",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "browser/actors/ContextMenuParent.sys.mjs",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|browser/actors/FormValidationParent.sys.mjs||5722045ff8d9",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "browser/actors/FormValidationParent.sys.mjs",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|browser/actors/FormValidationParent.sys.mjs|export class FormValidationParent extends JSWindowActorParent {|183f0da25599",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "browser/actors/FormValidationParent.sys.mjs",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|browser/base/content/browser.js|var { AppConstants } = ChromeUtils.importESModule(|0c13977d4f3c",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "browser/base/content/browser.js",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|browser/base/content/browser.js|var XULBrowserWindow = {|a67b2fb0c3a2",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "browser/base/content/browser.js",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|browser/components/genai/GenAI.sys.mjs|import { AppConstants } from \"resource://gre/modules/AppConstants.sys.mjs\";|5f89083c86b0",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "browser/components/genai/GenAI.sys.mjs",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|browser/components/genai/GenAI.sys.mjs|export const GenAI = {|5e8fedd55e9e",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "browser/components/genai/GenAI.sys.mjs",
+   "hunk": 2,
    "churn": 1,
    "which": [
+    "159"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|docshell/base/CanonicalBrowsingContext.h|namespace dom {|32af8a6c5e06",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "docshell/base/CanonicalBrowsingContext.h",
+   "hunk": 1,
+   "churn": 2,
+   "which": [
+    "154",
     "158"
    ]
   },
   {
-   "key": "H|fingerprint/screen-window/geometry|dom/base/nsGlobalWindowOuter.cpp|CSSIntSize nsGlobalWindowOuter::GetOuterSize(CallerType aCallerType,|2446b63002f7",
+   "key": "H|fingerprint/screen-window/geometry|docshell/base/CanonicalBrowsingContext.h|class CanonicalBrowsingContext final : public BrowsingContext {|1d2f2983c4b1",
    "folder": "fingerprint/screen-window/geometry",
-   "file": "dom/base/nsGlobalWindowOuter.cpp",
+   "file": "docshell/base/CanonicalBrowsingContext.h",
    "hunk": 2,
-   "churn": 0,
-   "which": []
-  },
-  {
-   "key": "H|fingerprint/screen-window/geometry|dom/base/nsGlobalWindowOuter.cpp|CSSIntPoint nsGlobalWindowOuter::GetScreenXY(CallerType aCallerType,|32245615bb0c",
-   "folder": "fingerprint/screen-window/geometry",
-   "file": "dom/base/nsGlobalWindowOuter.cpp",
-   "hunk": 3,
-   "churn": 0,
-   "which": []
-  },
-  {
-   "key": "H|fingerprint/screen-window/geometry|dom/base/nsGlobalWindowOuter.cpp|float nsGlobalWindowOuter::GetMozInnerScreenXOuter(CallerType aCallerType) {|66de66c53ecc",
-   "folder": "fingerprint/screen-window/geometry",
-   "file": "dom/base/nsGlobalWindowOuter.cpp",
-   "hunk": 4,
-   "churn": 0,
-   "which": []
-  },
-  {
-   "key": "H|fingerprint/screen-window/geometry|dom/base/nsGlobalWindowOuter.cpp|float nsGlobalWindowOuter::GetMozInnerScreenYOuter(CallerType aCallerType) {|57c1cc0adba7",
-   "folder": "fingerprint/screen-window/geometry",
-   "file": "dom/base/nsGlobalWindowOuter.cpp",
-   "hunk": 5,
-   "churn": 0,
-   "which": []
-  },
-  {
-   "key": "H|fingerprint/screen-window/geometry|dom/events/Event.cpp||81209a63d43e",
-   "folder": "fingerprint/screen-window/geometry",
-   "file": "dom/events/Event.cpp",
-   "hunk": 1,
    "churn": 1,
    "which": [
-    "153"
+    "154"
    ]
   },
   {
-   "key": "H|fingerprint/screen-window/geometry|dom/events/Event.cpp|Maybe<CSSDoublePoint> Event::GetScreenCoords(|184917bf1aa6",
+   "key": "H|fingerprint/screen-window/geometry|dom/chrome-webidl/BrowsingContext.webidl|interface CanonicalBrowsingContext : BrowsingContext {|b196245dc677",
    "folder": "fingerprint/screen-window/geometry",
-   "file": "dom/events/Event.cpp",
-   "hunk": 2,
+   "file": "dom/chrome-webidl/BrowsingContext.webidl",
+   "hunk": 1,
    "churn": 0,
    "which": []
   },
@@ -3638,6 +3673,192 @@
    "hunk": 1,
    "churn": 0,
    "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.cpp||b9bcdcd1b472",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.cpp",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.cpp|mozilla::ipc::IPCResult BrowserParent::RecvSetDimensions(|f612da8e99d4",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.cpp",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.cpp|void BrowserParent::UpdateDimensions(const LayoutDeviceIntRect& rect,|ed04d124f1ef",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.cpp",
+   "hunk": 3,
+   "churn": 1,
+   "which": [
+    "152"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.cpp|void BrowserParent::SetChildToParentConversionMatrix(|d032a2474b49",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.cpp",
+   "hunk": 4,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.h|class BrowserParent final : public PBrowserParent,|0263d033ac6b",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.h",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/BrowserParent.h|class BrowserParent final : public PBrowserParent,|f859ace8be86",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/BrowserParent.h",
+   "hunk": 2,
+   "churn": 1,
+   "which": [
+    "154"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/gtest/moz.build|UNIFIED_SOURCES += [|e6acc43b9f7f",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/gtest/moz.build",
+   "hunk": 1,
+   "churn": 1,
+   "which": [
+    "157"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/gtest/moz.build|LOCAL_INCLUDES += [|5fe0853a4f79",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/gtest/moz.build",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|dom/ipc/moz.build|UNIFIED_SOURCES += [|713f2374d3c8",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "dom/ipc/moz.build",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|layout/generic/nsSubDocumentFrame.cpp||aaadb47b6a94",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "layout/generic/nsSubDocumentFrame.cpp",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|layout/generic/nsSubDocumentFrame.cpp|WebRenderCommandsResult nsDisplayRemote::CreateWebRenderCommands(|9524c436a75d",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "layout/generic/nsSubDocumentFrame.cpp",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/actors/AutoCompleteParent.sys.mjs||5722045ff8d9",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/actors/AutoCompleteParent.sys.mjs",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/actors/AutoCompleteParent.sys.mjs|export class AutoCompleteParent extends JSWindowActorParent {|10a2fab84b30",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/actors/AutoCompleteParent.sys.mjs",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/actors/InputPickerParentCommon.sys.mjs||5722045ff8d9",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/actors/InputPickerParentCommon.sys.mjs",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/actors/InputPickerParentCommon.sys.mjs|export class InputPickerParentCommon extends JSWindowActorParent {|5986cbbc50e1",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/actors/InputPickerParentCommon.sys.mjs",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/actors/SelectParent.sys.mjs||5722045ff8d9",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/actors/SelectParent.sys.mjs",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/actors/SelectParent.sys.mjs|export class SelectParent extends JSWindowActorParent {|4aca1ec019da",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/actors/SelectParent.sys.mjs",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/components/pictureinpicture/PictureInPicture.sys.mjs|import { XPCOMUtils } from \"resource://gre/modules/XPCOMUtils.sys.mjs\";|5f89083c86b0",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/components/pictureinpicture/PictureInPicture.sys.mjs",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/components/pictureinpicture/PictureInPicture.sys.mjs|export class PictureInPictureToggleParent extends JSWindowActorParent {|c7834870a714",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/components/pictureinpicture/PictureInPicture.sys.mjs",
+   "hunk": 2,
+   "churn": 1,
+   "which": [
+    "152"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/content/widgets/browser-custom-element.mjs|const { XPCOMUtils } = ChromeUtils.importESModule(|5726f3df63bc",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/content/widgets/browser-custom-element.mjs",
+   "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/content/widgets/browser-custom-element.mjs|export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {|0484dd29565a",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/content/widgets/browser-custom-element.mjs",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|toolkit/modules/moz.build|EXTRA_JS_MODULES += [|610cc09fd48e",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "toolkit/modules/moz.build",
+   "hunk": 1,
+   "churn": 1,
+   "which": [
+    "156"
+   ]
   },
   {
    "key": "H|fingerprint/screen-window/geometry|widget/gtk/moz.build|SOURCES += [|c4da05c13cd4",
@@ -3670,6 +3891,40 @@
    "folder": "fingerprint/screen-window/geometry",
    "file": "widget/moz.build",
    "hunk": 1,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|widget/nsBaseDragService.cpp||4583ced08820",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "widget/nsBaseDragService.cpp",
+   "hunk": 1,
+   "churn": 1,
+   "which": [
+    "154"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|widget/nsBaseDragService.cpp|nsresult nsBaseDragSession::EndDragSessionImpl(bool aDoneDrag,|7f71ea33e31c",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "widget/nsBaseDragService.cpp",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|widget/nsBaseDragService.cpp|nsresult nsBaseDragSession::DrawDrag(nsINode* aDOMNode,|0330c4b38a4f",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "widget/nsBaseDragService.cpp",
+   "hunk": 3,
+   "churn": 0,
+   "which": []
+  },
+  {
+   "key": "H|fingerprint/screen-window/geometry|widget/nsBaseDragService.cpp|nsBaseDragSession::SendStoreDropTargetAndDelayEndDragSession(|969d5bda50f4",
+   "folder": "fingerprint/screen-window/geometry",
+   "file": "widget/nsBaseDragService.cpp",
+   "hunk": 4,
    "churn": 0,
    "which": []
   },
@@ -3755,6 +4010,24 @@
    "which": []
   },
   {
+   "key": "H|fingerprint/screen-window/popup-position|docshell/base/CanonicalBrowsingContext.h|class CanonicalBrowsingContext final : public BrowsingContext {|8fe884669128",
+   "folder": "fingerprint/screen-window/popup-position",
+   "file": "docshell/base/CanonicalBrowsingContext.h",
+   "hunk": 1,
+   "churn": 1,
+   "which": [
+    "158"
+   ]
+  },
+  {
+   "key": "H|fingerprint/screen-window/popup-position|docshell/base/CanonicalBrowsingContext.h|class CanonicalBrowsingContext final : public BrowsingContext {|9da9b24f876d",
+   "folder": "fingerprint/screen-window/popup-position",
+   "file": "docshell/base/CanonicalBrowsingContext.h",
+   "hunk": 2,
+   "churn": 0,
+   "which": []
+  },
+  {
    "key": "H|fingerprint/screen-window/popup-position|toolkit/components/windowwatcher/moz.build|UNIFIED_SOURCES += [|597550accea2",
    "folder": "fingerprint/screen-window/popup-position",
    "file": "toolkit/components/windowwatcher/moz.build",
@@ -3771,7 +4044,7 @@
    "which": []
   },
   {
-   "key": "H|fingerprint/screen-window/popup-position|toolkit/components/windowwatcher/nsWindowWatcher.cpp|static void SizeOpenedWindow(nsIDocShellTreeOwner* aTreeOwner,|229cf54f8478",
+   "key": "H|fingerprint/screen-window/popup-position|toolkit/components/windowwatcher/nsWindowWatcher.cpp|static void SizeOpenedWindow(nsIDocShellTreeOwner* aTreeOwner,|c25fe98c10d1",
    "folder": "fingerprint/screen-window/popup-position",
    "file": "toolkit/components/windowwatcher/nsWindowWatcher.cpp",
    "hunk": 2,
@@ -3809,22 +4082,6 @@
    "folder": "fingerprint/screen-window/screen",
    "file": "dom/base/nsScreen.cpp",
    "hunk": 4,
-   "churn": 0,
-   "which": []
-  },
-  {
-   "key": "H|fingerprint/screen-window/screen|layout/base/nsPresContext.cpp||beaba2b3b501",
-   "folder": "fingerprint/screen-window/screen",
-   "file": "layout/base/nsPresContext.cpp",
-   "hunk": 1,
-   "churn": 0,
-   "which": []
-  },
-  {
-   "key": "H|fingerprint/screen-window/screen|layout/base/nsPresContext.cpp|void nsPresContext::SetOverrideDPPX(float aDPPX) {|fcd2159d5896",
-   "folder": "fingerprint/screen-window/screen",
-   "file": "layout/base/nsPresContext.cpp",
-   "hunk": 2,
    "churn": 0,
    "which": []
   },

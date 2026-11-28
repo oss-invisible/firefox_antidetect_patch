@@ -245,5 +245,15 @@
   "date": "2026-11-26",
   "test": "xpcshell:js/xpconnect/tests/unit/test_stealth_hybrid_xrays_options.js#run_test",
   "budget": "removed"
+ },
+ {
+  "file": "dom/base/nsGlobalWindowOuter.cpp",
+  "from": 2,
+  "to": 3,
+  "folder": "fingerprint/locale-time/session-declaration",
+  "reason": "the include of this hook sat before the include of fingerprint/screen-window/geometry, which the root redesign of the window origin removes: the blank line that closed our include block now belongs to this hunk. No hook line is added",
+  "decided_by": "pm 28/11, root redesign of the 71",
+  "date": "2026-11-28",
+  "test": "wrapper:tests/test_context_locale_e2e.py::test_intl_in_the_page_realm_follows_the_language_and_zone_of_its_context"
  }
 ]
