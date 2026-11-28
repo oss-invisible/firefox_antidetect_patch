@@ -622,7 +622,7 @@ bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter) {
 
 StealthDeclaredDimensions StealthDeclaredWindowDimensions(
     const StealthWindowFrame& aFrame, const LayoutDeviceIntRect& aMaximized,
-    const LayoutDeviceIntSize& aScreen, const StealthWindowState& aState) {
+    const LayoutDeviceIntSize& aScreen, const StealthDeclaredWindowState& aState) {
   // f(0x0) = 0x0: a window that has no size yet stays empty, with no offsets.
   if (!StealthOuterSizeIsDeclared(aState.mRealOuter)) {
     return StealthDeclaredDimensions{};
@@ -655,7 +655,7 @@ StealthDeclaredDimensions StealthDeclaredWindowDimensions(
 }
 
 Maybe<StealthDeclaredDimensions> StealthDeclaredWindowDimensionsNow(
-    const CSSToLayoutDeviceScale& aScale, const StealthWindowState& aState) {
+    const CSSToLayoutDeviceScale& aScale, const StealthDeclaredWindowState& aState) {
   const Maybe<StealthWindowFrame> frame = StealthDeclaredWindowFrame();
   if (frame.isNothing()) {
     return Nothing();

@@ -386,7 +386,7 @@
   "function": "nsresult nsBaseDragSession::EndDragSessionImpl(bool aDoneDrag,",
   "kind": "rewrite",
   "form": "wrap-expression",
-  "line": "    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, StealthDragPoint(bp, mEndDragPoint),  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "line": "    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, StealthDragPoint(mSourceTopWindowContext, mEndDragPoint),  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
   "removed": "    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, mEndDragPoint,",
   "test": "wrapper:tests/test_a_drag_from_the_top_into_a_frame_of_another_site_e2e.py::test_a_drag_from_the_top_into_a_frame_of_another_site[1920x1080-dpr1.25]"
  },

@@ -30,6 +30,8 @@
 #include "Units.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/dom/BrowserParent.h"
+#include "mozilla/dom/WindowContext.h"
+#include "mozilla/dom/WindowGlobalParent.h"
 
 namespace mozilla::dom {
 
@@ -67,6 +69,23 @@ inline LayoutDeviceIntPoint StealthDragPoint(
     BrowserParent* aBrowser, const LayoutDeviceIntPoint& aPoint) {
   const Maybe<LayoutDeviceIntPoint> delta = StealthChromeDeltaOf(aBrowser);
   return delta ? StealthTranslatedPoint(aPoint, *delta) : aPoint;
+}
+
+// The end point of a drag, for the child that holds the drag SOURCE: the only
+// child that uses it (it fires dragend there, nsBaseDragSession::
+// FireDragEventAtSource; the sessions of the other browsers just end). Its
+// matrix is M_decl of the source's tab, so the point is p + d of the tab of
+// aTopWindowContext, the top window context of the drag source. The point goes
+// to every browser of the session, and each of them may be in another window
+// with another d, so one delta per browser cannot be had at the call without a
+// local of the loop: it is the source's, which is the one that counts. With no
+// source in a content process (a drag from the chrome or from outside the app)
+// no child fires a dragend, and the point is left as it is.
+inline LayoutDeviceIntPoint StealthDragPoint(
+    WindowContext* aTopWindowContext, const LayoutDeviceIntPoint& aPoint) {
+  WindowGlobalParent* wgp =
+      aTopWindowContext ? aTopWindowContext->Canonical() : nullptr;
+  return StealthDragPoint(wgp ? wgp->GetBrowserParent() : nullptr, aPoint);
 }
 
 }  // namespace mozilla::dom

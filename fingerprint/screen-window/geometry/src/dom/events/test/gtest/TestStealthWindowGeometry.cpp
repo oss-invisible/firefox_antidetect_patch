@@ -44,7 +44,7 @@ TEST(StealthWindowGeometry, TheEngineOffDeclaresNothing)
   for (const char* pref : kPrefs) {
     Preferences::ClearUser(pref);
   }
-  gfx::StealthWindowState state;
+  gfx::StealthDeclaredWindowState state;
   state.mRealOuter = LayoutDeviceIntSize(1280, 1024);
   EXPECT_TRUE(gfx::StealthDeclaredWindowDimensionsNow(
                   CSSToLayoutDeviceScale(1.0f), state)
@@ -261,8 +261,8 @@ const LayoutDeviceIntSize kScreenDevice[] = {
     LayoutDeviceIntSize(1920, 1080), LayoutDeviceIntSize(1920, 1080),
     LayoutDeviceIntSize(1920, 1080), LayoutDeviceIntSize(1600, 1200)};
 
-gfx::StealthWindowState Sized(const LayoutDeviceIntSize& aInner) {
-  gfx::StealthWindowState state;
+gfx::StealthDeclaredWindowState Sized(const LayoutDeviceIntSize& aInner) {
+  gfx::StealthDeclaredWindowState state;
   state.mTopInner = aInner;
   // Any real outer size but 0x0: the declaration does not read its value.
   state.mRealOuter = LayoutDeviceIntSize(1280, 1024);
@@ -270,7 +270,7 @@ gfx::StealthWindowState Sized(const LayoutDeviceIntSize& aInner) {
 }
 
 gfx::StealthDeclaredDimensions Declared(const RetailScale& aRetail,
-                                        const gfx::StealthWindowState& aState,
+                                        const gfx::StealthDeclaredWindowState& aState,
                                         size_t aIndex) {
   return gfx::StealthDeclaredWindowDimensions(
       aRetail.mFrame, aRetail.mMaximized, kScreenDevice[aIndex], aState);
@@ -368,7 +368,7 @@ TEST(StealthWindowGeometry, ThePopupIsDeclaredAtTheFourScales)
   for (size_t i = 0; i < std::size(kRetail); i++) {
     const RetailScale& r = kRetail[i];
     SCOPED_TRACE(r.mScale);
-    gfx::StealthWindowState state = Sized(r.mInner);
+    gfx::StealthDeclaredWindowState state = Sized(r.mInner);
     state.mPopup = true;
 
     // No position declared yet: the declared default stands in.
@@ -393,7 +393,7 @@ TEST(StealthWindowGeometry, ThePopupIsDeclaredAtTheFourScales)
   }
   // What the page reads at scale 1.25 for the default popup: the retail row
   // says outerWidth 514, outerHeight 478, screenX/screenY 3.
-  gfx::StealthWindowState at125 = Sized(kRetail[1].mInner);
+  gfx::StealthDeclaredWindowState at125 = Sized(kRetail[1].mInner);
   at125.mPopup = true;
   const gfx::StealthDeclaredDimensions d = Declared(kRetail[1], at125, 1);
   EXPECT_EQ(Css(d.mRect.width, 1.25f), 514);
@@ -412,7 +412,7 @@ TEST(StealthWindowGeometry, FullscreenIsTheDeclaredScreen)
     const RetailScale& r = kRetail[i];
     SCOPED_TRACE(r.mScale);
     for (const bool popup : {false, true}) {
-      gfx::StealthWindowState state = Sized(r.mInner);
+      gfx::StealthDeclaredWindowState state = Sized(r.mInner);
       state.mPopup = popup;
       state.mPopupPosition = Some(LayoutDeviceIntPoint(100, 80));
       state.mFullscreen = true;
@@ -433,8 +433,8 @@ TEST(StealthWindowGeometry, ABridgedFrameHasNoChromeOffset)
   for (size_t i = 0; i < std::size(kRetail); i++) {
     const RetailScale& r = kRetail[i];
     SCOPED_TRACE(r.mScale);
-    gfx::StealthWindowState top = Sized(r.mInner);
-    gfx::StealthWindowState frame = top;
+    gfx::StealthDeclaredWindowState top = Sized(r.mInner);
+    gfx::StealthDeclaredWindowState frame = top;
     frame.mBridged = true;
     EXPECT_EQ(Declared(r, frame, i).mRect, Declared(r, top, i).mRect);
     EXPECT_EQ(Declared(r, frame, i).mClientOffset,
@@ -461,7 +461,7 @@ TEST(StealthWindowGeometry, AWindowWithNoSizeYetStaysEmpty)
     for (const bool popup : {false, true}) {
       for (const bool fullscreen : {false, true}) {
         for (const bool bridged : {false, true}) {
-          gfx::StealthWindowState state = Sized(r.mInner);
+          gfx::StealthDeclaredWindowState state = Sized(r.mInner);
           state.mPopup = popup;
           state.mFullscreen = fullscreen;
           state.mBridged = bridged;
@@ -492,12 +492,12 @@ TEST(StealthWindowGeometry, TheDeclarationDoesNotDependOnTheRealRect)
     const RetailScale& r = kRetail[i];
     SCOPED_TRACE(r.mScale);
     for (const bool popup : {false, true}) {
-      gfx::StealthWindowState real = Sized(r.mInner);
+      gfx::StealthDeclaredWindowState real = Sized(r.mInner);
       real.mPopup = popup;
       real.mPopupPosition = Some(LayoutDeviceIntPoint(100, 80));
       real.mRealOuter = LayoutDeviceIntSize(1317, 911);  // some host's window
       const gfx::StealthDeclaredDimensions once = Declared(r, real, i);
-      gfx::StealthWindowState declaredInput = real;
+      gfx::StealthDeclaredWindowState declaredInput = real;
       declaredInput.mRealOuter = once.mRect.Size();
       const gfx::StealthDeclaredDimensions twice =
           Declared(r, declaredInput, i);

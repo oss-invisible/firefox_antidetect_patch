@@ -64,9 +64,9 @@ inline BrowserParent* StealthTopBrowserParent(BrowserParent* aParent) {
 struct StealthWindowOrigin {
   // The declared state of aParent's window: the top's declared state, plus the
   // top's real inner size and aParent's own real outer size.
-  static gfx::StealthWindowState StateOf(BrowserParent* aParent) {
+  static gfx::StealthDeclaredWindowState StateOf(BrowserParent* aParent) {
     BrowserParent* top = StealthTopBrowserParent(aParent);
-    gfx::StealthWindowState state;
+    gfx::StealthDeclaredWindowState state;
     BrowsingContext* topContext =
         aParent->mBrowsingContext ? aParent->mBrowsingContext->Top() : nullptr;
     state.mPopup = topContext && topContext->GetIsPopupRequested();
@@ -168,7 +168,7 @@ struct StealthWindowOrigin {
       return std::move(aRequest);
     }
     BrowserParent* top = StealthTopBrowserParent(aParent);
-    const gfx::StealthWindowState state = StateOf(top);
+    const gfx::StealthDeclaredWindowState state = StateOf(top);
     const Maybe<gfx::StealthDeclaredDimensions> declared =
         gfx::StealthDeclaredWindowDimensionsNow(top->mDefaultScale, state);
     if (declared.isNothing()) {

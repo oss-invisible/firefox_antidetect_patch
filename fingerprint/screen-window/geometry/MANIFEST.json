@@ -51,13 +51,13 @@
   "widget/windows/StealthFullscreenWin.h": "100644"
  },
  "sha256": {
-  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "3baf3b0ee3a3ff9382ba59749405171ffef01a92da6e35453ae758f5f2b6a611",
+  "dom/events/test/gtest/TestStealthWindowGeometry.cpp": "dda700fc7a50922e7c4ede9817e4579437e5e1cbb98a331dc2d2ea9611cad5b5",
   "dom/ipc/StealthChromeDelta.h": "50b01d6ebf61ef32bac61c9dc643794b91656f0b10626685f5db046915122d91",
-  "dom/ipc/StealthChromeOffset.h": "fb7ef49d5ff0849aebcf9eb46620c442272e8c34c02a5937cb28db6cf3944918",
+  "dom/ipc/StealthChromeOffset.h": "e640cf832dcf920ebe4068c066156c0cb5bc3d8d261dbac3d81645dbd9ed0eb3",
   "dom/ipc/StealthGetDimensionInfo.h": "5632b31c4c08101551bca76d1d63fc91e61eca67db5490b9b0d7eea19af7962c",
   "dom/ipc/StealthScreenToReal.cpp": "b1f4703cce02d908bcbbcd55622b5f9179f10c397d0d892edbfcf1f42f4cceca",
   "dom/ipc/StealthScreenToReal.h": "e3064b3933b73db4f7ba2e9ccef7c394b79ed2c17ba2f81c7d2eb0a21676fb15",
-  "dom/ipc/StealthWindowOrigin.h": "a43071a099aff71af4bd0c079bab7d3415d18ae009c0fc3726986ff1c46bdac1",
+  "dom/ipc/StealthWindowOrigin.h": "28bd42535b3b0f97bdc4cebd3432b6c544ae43bee2ab20b2094f238b7e0e89c8",
   "dom/ipc/gtest/TestStealthChromeOffset.cpp": "8d416b725d0f76cded8886a22166b3c155d3e634cc1b970f018b5713faafa09a",
   "dom/ipc/gtest/TestStealthScreenToReal.cpp": "12a40f7d06220333ae59fca1928b175b40827d6eb11e961fff0a6f2ea0570b8b",
   "juggler/tests/every_parent_site_of_a_screen_coordinate_passes_the_map.test.mjs": "b5aa303a530317a819d0efe69b1a626a1ce0f62dd0a8773fb9dffe7077fcf31d",

@@ -319,7 +319,7 @@ bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter);
  * size, which only sizes a popup (layout depends on it, so it stays real) and
  * the real outer size, which only says whether a window has a size yet.
  */
-struct StealthWindowState {
+struct StealthDeclaredWindowState {
   // Was the top-level window opened as a popup (window.open with features)?
   bool mPopup = false;
   // The popup's declared position, device px; Nothing() until it is declared,
@@ -368,7 +368,7 @@ struct StealthDeclaredDimensions {
  */
 StealthDeclaredDimensions StealthDeclaredWindowDimensions(
     const StealthWindowFrame& aFrame, const LayoutDeviceIntRect& aMaximized,
-    const LayoutDeviceIntSize& aScreen, const StealthWindowState& aState);
+    const LayoutDeviceIntSize& aScreen, const StealthDeclaredWindowState& aState);
 
 /**
  * StealthDeclaredWindowDimensions with the declared frame, maximized window
@@ -376,7 +376,7 @@ StealthDeclaredDimensions StealthDeclaredWindowDimensions(
  * engine is off.
  */
 Maybe<StealthDeclaredDimensions> StealthDeclaredWindowDimensionsNow(
-    const CSSToLayoutDeviceScale& aScale, const StealthWindowState& aState);
+    const CSSToLayoutDeviceScale& aScale, const StealthDeclaredWindowState& aState);
 
 /**
  * A window.moveTo/moveBy/resizeTo/resizeBy request, in declared space, as the

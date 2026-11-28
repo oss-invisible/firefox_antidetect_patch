@@ -414,7 +414,7 @@ index 4810b64741bcdb1267ccba4dd3f5414934f8e13e..780754a1f76d48bc7dca3ccbb5f3105b
  EXPORTS.ipc = [
      "nsGUIEventIPC.h",
 diff --git a/widget/nsBaseDragService.cpp b/widget/nsBaseDragService.cpp
-index e54e8a60178d66af8d373f49c8d1872bd09f8406..7b85cbe9709aac2cb29eec3aa7ef580630a9d72b 100644
+index e54e8a60178d66af8d373f49c8d1872bd09f8406..fa965fd9cf05c3969412c8ba102528f629e8f4a2 100644
 --- a/widget/nsBaseDragService.cpp
 +++ b/widget/nsBaseDragService.cpp
 @@ -54,6 +54,8 @@
@@ -431,7 +431,7 @@ index e54e8a60178d66af8d373f49c8d1872bd09f8406..7b85cbe9709aac2cb29eec3aa7ef5806
        continue;
      }
 -    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, mEndDragPoint,
-+    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, StealthDragPoint(bp, mEndDragPoint),  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, StealthDragPoint(mSourceTopWindowContext, mEndDragPoint),  // STEALTH-HOOK(fingerprint/screen-window/geometry)
                                   aKeyModifiers, dropEffect);
      // Continue sending input events with input priority when stopping the dnd
      // session.
