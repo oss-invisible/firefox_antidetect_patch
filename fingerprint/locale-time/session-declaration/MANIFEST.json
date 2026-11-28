@@ -48,7 +48,7 @@
    "category": "spoof",
    "feature": "session-declaration",
    "prefs": [],
-   "added": 2,
+   "added": 3,
    "removed": 2,
    "hunks": 2,
    "inline_logic_lines": 1,

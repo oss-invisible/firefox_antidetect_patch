@@ -1,75 +1,125 @@
-diff --git a/dom/base/nsGlobalWindowOuter.cpp b/dom/base/nsGlobalWindowOuter.cpp
-index 6f072ae4ff4528e187e2338dc5793e0881161d9c..d864090c3f9171abfe4ae73e988a4ee8fead85a4 100644
---- a/dom/base/nsGlobalWindowOuter.cpp
-+++ b/dom/base/nsGlobalWindowOuter.cpp
-@@ -236,6 +236,8 @@
- #include "xpcprivate.h"
+diff --git a/browser/actors/ContextMenuParent.sys.mjs b/browser/actors/ContextMenuParent.sys.mjs
+index 9e0ef4f14fdf455c3a8693dbfc3741faecb6fc08..b5333e495878488e87af4e7a982ac13b8e7b9f68 100644
+--- a/browser/actors/ContextMenuParent.sys.mjs
++++ b/browser/actors/ContextMenuParent.sys.mjs
+@@ -4,6 +4,8 @@
  
- #include "mozilla/dom/StealthSessionDeclaration.h"  // STEALTH-HOOK(fingerprint/locale-time/session-declaration)
-+#include "StealthWindowGeometry.h"  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+ 
++import { StealthContextScreenToReal } from "resource://gre/modules/StealthScreenMap.sys.mjs";  // STEALTH-HOOK(fingerprint/screen-window/geometry)
 +
- #ifdef MOZ_WEBSPEECH
- #  include "mozilla/dom/SpeechSynthesis.h"
- #endif
-@@ -3554,6 +3556,8 @@ CSSIntSize nsGlobalWindowOuter::GetOuterSize(CallerType aCallerType,
-     return {};
-   }
+ const lazy = {};
  
-+  if (CSSIntSize size; StealthOuterSize(*this, size, aError)) return size;  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ ChromeUtils.defineESModuleGetters(lazy, {
+@@ -217,6 +219,7 @@ export class ContextMenuParent extends JSWindowActorParent {
+ 
+     let popup = win.document.getElementById("contentAreaContextMenu");
+     let context = win.nsContextMenu.contentData.context;
++    context = StealthContextScreenToReal(wgp.browsingContext, context);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+     // Fill in some values in the context from the WindowGlobalParent actor.
+     context.principal = wgp.documentPrincipal;
+diff --git a/browser/actors/FormValidationParent.sys.mjs b/browser/actors/FormValidationParent.sys.mjs
+index 2eca818bc761b4a0a83e2458768a4dfca938617b..e667ea2356403a8e18bb13d5720dd21466721bb4 100644
+--- a/browser/actors/FormValidationParent.sys.mjs
++++ b/browser/actors/FormValidationParent.sys.mjs
+@@ -2,6 +2,8 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++import { StealthScreenRectToReal } from "resource://gre/modules/StealthScreenMap.sys.mjs";  // STEALTH-HOOK(fingerprint/screen-window/geometry)
 +
-   // Windows showing documents in RDM panes and any subframes within them
-   // return the simulated device size.
-   if (mDoc) {
-@@ -3615,6 +3619,8 @@ CSSIntPoint nsGlobalWindowOuter::GetScreenXY(CallerType aCallerType,
-     return CSSIntPoint(0, 0);
-   }
+ /*
+  * Chrome side handling of form validation popup.
+  */
+@@ -173,7 +175,7 @@ export class FormValidationParent extends JSWindowActorParent {
+     aBrowser.constrainPopup(this._panel);
  
-+  if (CSSIntPoint point; StealthScreenXY(*this, treeOwnerAsWin, point)) return point;  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+     // Open the popup
+-    let rect = aPanelData.screenRect;
++    let rect = StealthScreenRectToReal(this.browsingContext, aPanelData.screenRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+     this._panel.openPopupAtScreenRect(
+       aPanelData.position,
+       rect.left,
+diff --git a/browser/base/content/browser.js b/browser/base/content/browser.js
+index 7ce8e235dd4dafde6ed1bfa8c81c4dc1409141f1..0b896a3652a40052648b723db9a7e61cf18c91ed 100644
+--- a/browser/base/content/browser.js
++++ b/browser/base/content/browser.js
+@@ -9,6 +9,8 @@ var { AppConstants } = ChromeUtils.importESModule(
+   "resource://gre/modules/AppConstants.sys.mjs"
+ );
+ 
++var { StealthScreenXDevPxToReal, StealthScreenYDevPxToReal } = ChromeUtils.importESModule("resource://gre/modules/StealthScreenMap.sys.mjs");  // STEALTH-HOOK(fingerprint/screen-window/geometry)
 +
-   LayoutDeviceIntPoint windowPos;
-   aError = treeOwnerAsWin->GetPosition(&windowPos.x.value, &windowPos.y.value);
+ // lazy module getters
  
-@@ -3696,6 +3702,7 @@ float nsGlobalWindowOuter::GetMozInnerScreenXOuter(CallerType aCallerType) {
-   }
+ ChromeUtils.defineESModuleGetters(this, {
+@@ -2095,6 +2097,8 @@ var XULBrowserWindow = {
+     let elt = document.getElementById("remoteBrowserTooltip");
+     elt.label = tooltip;
+     elt.style.direction = direction;
++    xDevPix = StealthScreenXDevPxToReal(_browser.browsingContext, xDevPix);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++    yDevPix = StealthScreenYDevPxToReal(_browser.browsingContext, yDevPix);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+     elt.openPopupAtScreen(
+       xDevPix / window.devicePixelRatio,
+       yDevPix / window.devicePixelRatio,
+diff --git a/browser/components/genai/GenAI.sys.mjs b/browser/components/genai/GenAI.sys.mjs
+index d3fa80dbdf9fcdf6c1ee4bf8176012ea734415ce..211d7ce5b0e7d26d52a7dd3ea72146e974156666 100644
+--- a/browser/components/genai/GenAI.sys.mjs
++++ b/browser/components/genai/GenAI.sys.mjs
+@@ -8,6 +8,8 @@ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+ import { AIFeature } from "chrome://global/content/ml/AIFeature.sys.mjs";
  
-   nsRect r = GetInnerScreenRect();
-+  if (const Maybe<float> x = StealthMozInnerScreenX(*this, r)) return *x;  // STEALTH-HOOK(fingerprint/screen-window/geometry)
-   return nsPresContext::AppUnitsToFloatCSSPixels(r.x);
- }
- 
-@@ -3707,6 +3714,7 @@ float nsGlobalWindowOuter::GetMozInnerScreenYOuter(CallerType aCallerType) {
-   }
- 
-   nsRect r = GetInnerScreenRect();
-+  if (const Maybe<float> y = StealthMozInnerScreenY(*this, r)) return *y;  // STEALTH-HOOK(fingerprint/screen-window/geometry)
-   return nsPresContext::AppUnitsToFloatCSSPixels(r.y);
- }
- 
-diff --git a/dom/events/Event.cpp b/dom/events/Event.cpp
-index 98ebfdab771f69cf2d891c184511b6758261246d..1a33d0d152b15f26911142f9f493df9eaff24786 100644
---- a/dom/events/Event.cpp
-+++ b/dom/events/Event.cpp
-@@ -48,6 +48,8 @@
- #include "nsPIWindowRoot.h"
- #include "nsRFPService.h"
- 
-+#include "StealthScreenCoords.h"  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++import { StealthContextScreenToReal } from "resource://gre/modules/StealthScreenMap.sys.mjs";  // STEALTH-HOOK(fingerprint/screen-window/geometry)
 +
- namespace mozilla::dom {
+ const lazy = {};
+ ChromeUtils.defineESModuleGetters(lazy, {
+   AIWindow:
+@@ -821,6 +823,7 @@ export const GenAI = {
+           smart_window: isSmartWindow,
+         });
  
- Event::Event(EventTarget* aOwner, nsPresContext* aPresContext,
-@@ -672,9 +674,10 @@ Maybe<CSSDoublePoint> Event::GetScreenCoords(
-   const CSSPoint pt = CSSPixel::FromAppUnits(
-       LayoutDevicePixel::ToAppUnits(
-           topLevelPoint, aPresContext->DeviceContext()->AppUnitsPerDevPixel()) +
-+      StealthWithContentOrigin(aPresContext,  // STEALTH-HOOK(fingerprint/screen-window/geometry)
-       LayoutDevicePixel::ToAppUnits(
-           guiEvent->mWidget->TopLevelWidgetToScreenOffset(),
--          aPresContext->DeviceContext()->AppUnitsPerDevPixel()));
-+          aPresContext->DeviceContext()->AppUnitsPerDevPixel())));  // STEALTH-HOOK(fingerprint/screen-window/geometry)
-   return Some(CSSDoublePoint(pt.x, pt.y));
- }
++        data = StealthContextScreenToReal(browser.browsingContext, data);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+         // Position the shortcuts relative to the browser's top-left corner
+         const screenYBase = data.screenYDevPx / devicePixelRatio;
+         const safeSpace = window.outerHeight - 40;
+diff --git a/docshell/base/CanonicalBrowsingContext.h b/docshell/base/CanonicalBrowsingContext.h
+index 4f00705f303872577da41df1d171c95425e3716a..01c2f59dd92f2fb36c258e878da4c88208566ced 100644
+--- a/docshell/base/CanonicalBrowsingContext.h
++++ b/docshell/base/CanonicalBrowsingContext.h
+@@ -52,6 +52,7 @@ namespace dom {
  
+ class BrowserParent;
+ class BrowserBridgeParent;
++class DOMRectReadOnly;  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ class PermissionsPolicy;
+ struct LoadURIOptions;
+ class MediaController;
+@@ -254,6 +255,9 @@ class CanonicalBrowsingContext final : public BrowsingContext {
+   // are related with the canonical browsing content tree to start delayed
+   // autoplay media.
+   void NotifyStartDelayedAutoplayMedia();
++  already_AddRefed<DOMRectReadOnly> StealthScreenRectToReal(DOMRectReadOnly& aRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++  double StealthScreenXDevPxToReal(double aXDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++  double StealthScreenYDevPxToReal(double aYDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+   // Return the number of unique site origins by iterating all given BCs,
+   // including their subtrees.
+diff --git a/dom/chrome-webidl/BrowsingContext.webidl b/dom/chrome-webidl/BrowsingContext.webidl
+index 38fd39f0661870235e96ea93729cb95550311591..6d73513e1082aa02c4bc812d5db65976e33efa63 100644
+--- a/dom/chrome-webidl/BrowsingContext.webidl
++++ b/dom/chrome-webidl/BrowsingContext.webidl
+@@ -339,6 +339,9 @@ interface CanonicalBrowsingContext : BrowsingContext {
+   readonly attribute WindowGlobalParent? currentWindowGlobal;
+ 
+   readonly attribute WindowProxy? topChromeWindow;
++  [ChromeOnly] DOMRectReadOnly stealthScreenRectToReal(DOMRectReadOnly aRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++  [ChromeOnly] double stealthScreenXDevPxToReal(double aXDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++  [ChromeOnly] double stealthScreenYDevPxToReal(double aYDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+   // XXX(nika): This feels kinda hacky, but will do for now while we don't
+   // synchronously create WindowGlobalParent. It can throw if somehow the
 diff --git a/dom/events/test/gtest/moz.build b/dom/events/test/gtest/moz.build
 index 2b1e2c210050c9f13c35395f9683baddfb756a07..41c8ef1419811b6556fdbb69f445f81435488b99 100644
 --- a/dom/events/test/gtest/moz.build
@@ -82,6 +132,239 @@ index 2b1e2c210050c9f13c35395f9683baddfb756a07..41c8ef1419811b6556fdbb69f445f814
  
  LOCAL_INCLUDES += ["/dom/events"]
  
+diff --git a/dom/ipc/BrowserParent.cpp b/dom/ipc/BrowserParent.cpp
+index 8b4018fefdf9d149c24d43e4493aceb07a9a9b25..99d6f6360fb9162992cfc7c604b824253ccc5bc4 100644
+--- a/dom/ipc/BrowserParent.cpp
++++ b/dom/ipc/BrowserParent.cpp
+@@ -157,6 +157,8 @@
+ #  include "mozilla/widget/nsWindow.h"
+ #endif  // defined(MOZ_WIDGET_ANDROID)
+ 
++#include "StealthGetDimensionInfo.h"  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ using namespace mozilla::dom;
+ using namespace mozilla::ipc;
+ using namespace mozilla::layers;
+@@ -1149,7 +1151,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvSetDimensions(
+   // treeOwner is the chrome tree owner, but we wan't the content tree owner.
+   nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = do_GetInterface(treeOwner);
+   NS_ENSURE_TRUE(webBrowserChrome, IPC_OK());
+-  webBrowserChrome->SetDimensions(std::move(aRequest));
++  webBrowserChrome->SetDimensions(StealthRealDimensionRequest(this, std::move(aRequest)));  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+   return IPC_OK();
+ }
+ 
+@@ -1195,7 +1197,7 @@ void BrowserParent::UpdateDimensions(const LayoutDeviceIntRect& rect,
+   }
+ }
+ 
+-DimensionInfo BrowserParent::GetDimensionInfo() {
++DimensionInfo BrowserParent::GetDimensionInfo_Mozilla() {  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+   CSSRect unscaledRect = mRect / mDefaultScale;
+   CSSSize unscaledSize = mDimensions / mDefaultScale;
+   return DimensionInfo(unscaledRect, unscaledSize, mClientOffset,
+@@ -2716,7 +2718,7 @@ void BrowserParent::SetChildToParentConversionMatrix(
+   if (mIsDestroyed) {
+     return;
+   }
+-  (void)SendChildToParentMatrix(ToUnknownMatrix(aMatrix), aRemoteDocumentRect);
++  (void)StealthSendChildToParentMatrix(this, ToUnknownMatrix(aMatrix), aRemoteDocumentRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ }
+ 
+ LayoutDeviceIntPoint BrowserParent::GetChildProcessOffset() {
+diff --git a/dom/ipc/BrowserParent.h b/dom/ipc/BrowserParent.h
+index df6377896eccf210e2cb67620df0b4828c62d46d..30b47a016c2566fd10ab2b7fa3d2733744f175de 100644
+--- a/dom/ipc/BrowserParent.h
++++ b/dom/ipc/BrowserParent.h
+@@ -464,6 +464,7 @@ class BrowserParent final : public PBrowserParent,
+                         const LayoutDeviceIntSize& aSize);
+ 
+   DimensionInfo GetDimensionInfo();
++  DimensionInfo GetDimensionInfo_Mozilla();  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+   nsresult UpdatePosition();
+ 
+@@ -729,6 +730,7 @@ class BrowserParent final : public PBrowserParent,
+  protected:
+   friend BrowserBridgeParent;
+   friend BrowserHost;
++  friend struct StealthWindowOrigin;  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+   void SetBrowserBridgeParent(BrowserBridgeParent* aBrowser);
+   void SetBrowserHost(BrowserHost* aBrowser);
+diff --git a/dom/ipc/gtest/moz.build b/dom/ipc/gtest/moz.build
+index fd9919b6446e27a69fbc2e84904967d91802185a..690d5c9e39de4bf435813d19067b663ff2474d60 100644
+--- a/dom/ipc/gtest/moz.build
++++ b/dom/ipc/gtest/moz.build
+@@ -8,6 +8,8 @@ UNIFIED_SOURCES += [
+     "RemoteTypeTest.cpp",
+ ]
+ UNIFIED_SOURCES += ["TestStealthDragGesture.cpp", "TestStealthJugglerCoalesce.cpp", "TestStealthMouseEventIPC.cpp"]  # STEALTH-HOOK(automation/input)
++UNIFIED_SOURCES += ["TestStealthScreenToReal.cpp"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)
++UNIFIED_SOURCES += ["TestStealthChromeOffset.cpp"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+ include("/ipc/chromium/chromium-config.mozbuild")
+ 
+@@ -17,3 +19,4 @@ LOCAL_INCLUDES += [
+     "/xpcom/components",
+ ]
+ LOCAL_INCLUDES += ["/dom/events"]  # STEALTH-HOOK(automation/input)
++LOCAL_INCLUDES += ["/dom/ipc", "/layout/generic"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)
+diff --git a/dom/ipc/moz.build b/dom/ipc/moz.build
+index 58c9e15a4b6601b9161b75226b0d6877ffbde8d4..e180a91662f42848c54e755da7ff74c68f33786b 100644
+--- a/dom/ipc/moz.build
++++ b/dom/ipc/moz.build
+@@ -170,6 +170,7 @@ UNIFIED_SOURCES += [
+     "WindowGlobalChild.cpp",
+     "WindowGlobalParent.cpp",
+ ]
++UNIFIED_SOURCES += ["StealthScreenToReal.cpp"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+ # ContentChild.cpp cannot be compiled in unified mode on  linux due to Time conflict
+ SOURCES += [
+diff --git a/layout/generic/nsSubDocumentFrame.cpp b/layout/generic/nsSubDocumentFrame.cpp
+index 59e06e56ff9c952327e161569595c7f522e79c61..2e3b9cb97834b15364c0d8fdaecd4f22a1655ce7 100644
+--- a/layout/generic/nsSubDocumentFrame.cpp
++++ b/layout/generic/nsSubDocumentFrame.cpp
+@@ -43,6 +43,8 @@
+ #include "nsStyleConsts.h"
+ #include "nsStyleStruct.h"
+ 
++#include "StealthRemoteLayerOffset.h"  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ using namespace mozilla;
+ using namespace mozilla::dom;
+ using namespace mozilla::gfx;
+@@ -1296,7 +1298,7 @@ WebRenderCommandsResult nsDisplayRemote::CreateWebRenderCommands(
+   nscoord auPerDevPixel = mFrame->PresContext()->AppUnitsPerDevPixel();
+   nsPoint layerOffset =
+       aDisplayListBuilder->ToReferenceFrame(mFrame) + destRect.TopLeft();
+-  mOffset = LayoutDevicePoint::FromAppUnits(layerOffset, auPerDevPixel);
++  mOffset = StealthRemoteLayerOffset(mFrame, LayoutDevicePoint::FromAppUnits(layerOffset, auPerDevPixel));  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+   destRect.MoveTo(0, 0);
+   auto rect = LayoutDeviceRect::FromAppUnits(destRect, auPerDevPixel);
+diff --git a/toolkit/actors/AutoCompleteParent.sys.mjs b/toolkit/actors/AutoCompleteParent.sys.mjs
+index 4c662f4ee736d6eadb1dc5d0d32168beeb5dc895..b5644ccb7b3dda707bbbb5a3fd4d19f8f2e3305a 100644
+--- a/toolkit/actors/AutoCompleteParent.sys.mjs
++++ b/toolkit/actors/AutoCompleteParent.sys.mjs
+@@ -4,6 +4,8 @@
+ 
+ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+ 
++import { StealthScreenRectToReal } from "resource://gre/modules/StealthScreenMap.sys.mjs";  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ const lazy = {};
+ 
+ ChromeUtils.defineESModuleGetters(lazy, {
+@@ -315,6 +317,7 @@ export class AutoCompleteParent extends JSWindowActorParent {
+     browser.constrainPopup(this.openedPopup);
+     this.openedPopup.addEventListener("popuphidden", this);
+     this.openedPopup.addEventListener("popupshowing", this);
++    rect = StealthScreenRectToReal(this.browsingContext, rect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+     this.openedPopup.openPopupAtScreenRect(
+       "after_start",
+       rect.left,
+diff --git a/toolkit/actors/InputPickerParentCommon.sys.mjs b/toolkit/actors/InputPickerParentCommon.sys.mjs
+index b24ab82624e0b3719e3efb0df8215e9ba21da7b7..e89573d71c4435f6defdbc12e154cbe1e7606637 100644
+--- a/toolkit/actors/InputPickerParentCommon.sys.mjs
++++ b/toolkit/actors/InputPickerParentCommon.sys.mjs
+@@ -2,6 +2,8 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++import { StealthScreenRectToReal } from "resource://gre/modules/StealthScreenMap.sys.mjs";  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ const DEBUG = false;
+ function debug(aStr) {
+   if (DEBUG) {
+@@ -84,7 +86,7 @@ export class InputPickerParentCommon extends JSWindowActorParent {
+ 
+   // Get picker from browser and show it anchored to the input box.
+   showPicker(aData) {
+-    let rect = aData.rect;
++    let rect = StealthScreenRectToReal(this.browsingContext, aData.rect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+     let type = aData.type;
+     let detail = aData.detail;
+ 
+diff --git a/toolkit/actors/SelectParent.sys.mjs b/toolkit/actors/SelectParent.sys.mjs
+index 62ba121232c9b5c9feee94ff7aad0c0dd5ac4b81..8f3afed489afbc384b700932557606396adc0acc 100644
+--- a/toolkit/actors/SelectParent.sys.mjs
++++ b/toolkit/actors/SelectParent.sys.mjs
+@@ -5,6 +5,8 @@
+ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+ 
++import { StealthScreenRectToReal } from "resource://gre/modules/StealthScreenMap.sys.mjs";  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ const lazy = {};
+ 
+ let prefsChanged = false;
+@@ -870,7 +872,7 @@ export class SelectParent extends JSWindowActorParent {
+         SelectParentHelper.open(
+           this.relevantBrowser,
+           menulist,
+-          data.rect,
++          StealthScreenRectToReal(this.browsingContext, data.rect),  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+           data.isOpenedViaTouch,
+           this
+         );
+diff --git a/toolkit/components/pictureinpicture/PictureInPicture.sys.mjs b/toolkit/components/pictureinpicture/PictureInPicture.sys.mjs
+index 08c6951218e325c3facf9ae1a689e1bb9d5c5d48..c71f5bb7d7502fded5cca3f140180b0e7820f48d 100644
+--- a/toolkit/components/pictureinpicture/PictureInPicture.sys.mjs
++++ b/toolkit/components/pictureinpicture/PictureInPicture.sys.mjs
+@@ -8,6 +8,8 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+ 
+ import { ShortcutUtils } from "resource://gre/modules/ShortcutUtils.sys.mjs";
+ 
++import { StealthContextScreenToReal } from "resource://gre/modules/StealthScreenMap.sys.mjs";  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ const lazy = {};
+ XPCOMUtils.defineLazyServiceGetters(lazy, {
+   WindowsUIUtils: ["@mozilla.org/windows-ui-utils;1", Ci.nsIWindowsUIUtils],
+@@ -112,7 +114,7 @@ export class PictureInPictureToggleParent extends JSWindowActorParent {
+     switch (aMessage.name) {
+       case "PictureInPicture:OpenToggleContextMenu": {
+         let win = browser.documentGlobal;
+-        PictureInPicture.openToggleContextMenu(win, aMessage.data);
++        PictureInPicture.openToggleContextMenu(win, StealthContextScreenToReal(this.browsingContext, aMessage.data));  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+         break;
+       }
+       case "PictureInPicture:UpdateEligiblePipVideoCount": {
+diff --git a/toolkit/content/widgets/browser-custom-element.mjs b/toolkit/content/widgets/browser-custom-element.mjs
+index e310d9591f58a0873ae00a2c689c2518b6ee5c85..3fc6c468efa98832efa06242a8324f09985e701d 100644
+--- a/toolkit/content/widgets/browser-custom-element.mjs
++++ b/toolkit/content/widgets/browser-custom-element.mjs
+@@ -14,6 +14,8 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
+   "resource://gre/modules/XPCOMUtils.sys.mjs"
+ );
+ 
++const { StealthScreenXDevPxToReal, StealthScreenYDevPxToReal } = ChromeUtils.importESModule("resource://gre/modules/StealthScreenMap.sys.mjs");  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ let lazy = {};
+ 
+ ChromeUtils.defineESModuleGetters(lazy, {
+@@ -1389,6 +1391,8 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
+       this._autoScrollPopup.style.margin = -POPUP_SIZE / 2 + "px";
+     }
+ 
++    screenXDevPx = StealthScreenXDevPxToReal(browsingContext, screenXDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++    screenYDevPx = StealthScreenYDevPxToReal(browsingContext, screenYDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+     // In desktop pixels.
+     let screenXDesktopPx = screenXDevPx / window.desktopToDeviceScale;
+     let screenYDesktopPx = screenYDevPx / window.desktopToDeviceScale;
+diff --git a/toolkit/modules/moz.build b/toolkit/modules/moz.build
+index 852e9b0bb590e8376ebda3fd6b49d5c3fa374994..544c0ba90d72db84cea38f975d40b163936257a6 100644
+--- a/toolkit/modules/moz.build
++++ b/toolkit/modules/moz.build
+@@ -217,6 +217,7 @@ EXTRA_JS_MODULES += [
+     "UrlUtils.sys.mjs",
+     "WebChannel.sys.mjs",
+ ]
++EXTRA_JS_MODULES += ["StealthScreenMap.sys.mjs"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)
+ 
+ MOZ_SRC_FILES += [
+     "ColorPickerPanel.sys.mjs",
 diff --git a/widget/gtk/moz.build b/widget/gtk/moz.build
 index f9d5cbab9ce319df7bc05edcdc1772fcd276b6c1..b09d2c5b65f3ffd707649ca22dd2c54b13ca0bdb 100644
 --- a/widget/gtk/moz.build
@@ -130,6 +413,45 @@ index 4810b64741bcdb1267ccba4dd3f5414934f8e13e..780754a1f76d48bc7dca3ccbb5f3105b
  
  EXPORTS.ipc = [
      "nsGUIEventIPC.h",
+diff --git a/widget/nsBaseDragService.cpp b/widget/nsBaseDragService.cpp
+index e54e8a60178d66af8d373f49c8d1872bd09f8406..7b85cbe9709aac2cb29eec3aa7ef580630a9d72b 100644
+--- a/widget/nsBaseDragService.cpp
++++ b/widget/nsBaseDragService.cpp
+@@ -54,6 +54,8 @@
+ #include "nsXULPopupManager.h"
+ #include "nscore.h"
+ 
++#include "StealthChromeOffset.h"  // STEALTH-HOOK(fingerprint/screen-window/geometry)
++
+ using namespace mozilla;
+ using namespace mozilla::dom;
+ using namespace mozilla::gfx;
+@@ -777,7 +779,7 @@ nsresult nsBaseDragSession::EndDragSessionImpl(bool aDoneDrag,
+     if (NS_WARN_IF(!bp)) {
+       continue;
+     }
+-    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, mEndDragPoint,
++    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, StealthDragPoint(bp, mEndDragPoint),  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+                                  aKeyModifiers, dropEffect);
+     // Continue sending input events with input priority when stopping the dnd
+     // session.
+@@ -969,6 +971,7 @@ nsresult nsBaseDragSession::DrawDrag(nsINode* aDOMNode,
+       *aSurface = mDragStartData->TakeVisualization(aScreenDragRect);
+     }
+ 
++    StealthMapDragRect(mSourceTopWindowContext, aScreenDragRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+     mDragStartData = nullptr;
+     return NS_OK;
+   }
+@@ -1384,7 +1387,7 @@ nsBaseDragSession::SendStoreDropTargetAndDelayEndDragSession(
+     dropEffect = mDataTransfer->DropEffectInt();
+   }
+   (void)mDelayedDropBrowserParent->SendStoreDropTargetAndDelayEndDragSession(
+-      aEvent->WidgetEventPtr()->mRefPoint, dropEffect, mDragAction,
++      StealthDragPoint(mDelayedDropBrowserParent, aEvent->WidgetEventPtr()->mRefPoint), dropEffect, mDragAction,  // STEALTH-HOOK(fingerprint/screen-window/geometry)
+       mTriggeringPrincipal, mPolicyContainer);
+   return NS_OK;
+ }
 diff --git a/widget/nsIWidget.cpp b/widget/nsIWidget.cpp
 index 39411305c2b853b90a386d88b0c1fbae9449796e..032d61027ddf62e951b9383fde58a73f6c915ee3 100644
 --- a/widget/nsIWidget.cpp

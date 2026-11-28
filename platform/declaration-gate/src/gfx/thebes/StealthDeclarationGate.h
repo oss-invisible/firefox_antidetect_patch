@@ -7,6 +7,7 @@
 
 #include "Units.h"
 #include "mozilla/Maybe.h"
+#include "mozilla/Span.h"
 #include "mozilla/StaticPrefs_zoom.h"
 #include "mozilla/gfx/StealthCanvasProjection.h"
 #include "nsPoint.h"
@@ -142,6 +143,10 @@ struct StealthWindowFrame {
   int32_t mPopupUi;
   // A popup opened without left/top: where it is put, on both axes.
   int32_t mPopupPosition;
+  // A popup: from the window top (border included) to the top of its client
+  // area. An out-of-process frame that has not received its first matrix reads
+  // the client origin: the popup's position plus (mBorder, mPopupClientTop).
+  int32_t mPopupClientTop;
 };
 Maybe<StealthWindowFrame> StealthDeclaredWindowFrame();
 
@@ -150,6 +155,147 @@ Maybe<StealthWindowFrame> StealthDeclaredWindowFrame();
  * each side. Device pixels; the caller divides by its window's scale.
  */
 Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow();
+
+/**
+ * The top-left of the maximized main window: (-border, -border). Pure: the one
+ * place the maximized window's position is written, read by
+ * StealthDeclaredMaximizedWindow and StealthDeclaredClientOrigin.
+ */
+LayoutDeviceIntPoint StealthMaximizedWindowTopLeft(
+    const StealthWindowFrame& aFrame);
+
+/**
+ * The declared content origin D on screen, in device pixels: (0, 0) in
+ * fullscreen; a popup's position plus (border, popup UI); the maximized
+ * window's content (0, maximized UI) otherwise. Pure. The one place D is
+ * written: the chrome offset of a declared window is D minus the client origin.
+ */
+LayoutDeviceIntPoint StealthDeclaredContentOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen);
+
+/**
+ * The declared CLIENT origin on screen, in device pixels: the top-left of the
+ * top-level window's client area, which is where an out-of-process iframe that
+ * has laid out but has not received its first matrix reads mozInnerScreenX/Y
+ * (round 7 of the retail captures, WINDOW_GEOMETRY_FRAME_EARLY.csv: Mozilla's
+ * matrix is then Translation(0), so the frame reads the window's client
+ * origin). Fullscreen: (0, 0), the content is the screen. A popup (its declared
+ * position in aPopupWindowOrigin): that position plus (border, popup client
+ * top). The maximized main window: the declared maximized window's top-left
+ * plus (border, border), which is (0, 0). Pure.
+ */
+LayoutDeviceIntPoint StealthDeclaredClientOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen);
+
+/**
+ * The declared work area in device pixels: {0, 0, avail_device_width,
+ * avail_device_height}. The maximized window is this plus a border on each side
+ * (StealthDeclaredMaximizedWindow). Nothing() when the engine is off.
+ */
+Maybe<LayoutDeviceIntRect> StealthDeclaredAvailDeviceRect();
+
+/**
+ * Where a popup is declared to sit at birth, in DEVICE pixels, computed from
+ * declared inputs only (the work area, the frame, the scale, the positions the
+ * other browser windows are declared at). Retail's rule, read in the 159
+ * source and measured in round 5 (RetailCaptures popup-frame): the markup's
+ * position, the stagger, the constrain; then SizeOpenedWindow's clamp. Every
+ * constant below is Firefox's own, with its line; none is a pref.
+ */
+
+// browser.xhtml:17, screenX="4" screenY="4" on the root, applied by
+// AppWindow::LoadPositionFromXUL (AppWindow.cpp:1126-1199) to a popup too.
+constexpr int32_t kStealthPopupXulPosition = 4;
+// AppWindow::StaggerPosition (AppWindow.cpp:1352-1353): the step and the slop,
+// in CSS pixels, turned into device pixels with the screen's scale.
+constexpr int32_t kStealthPopupStaggerOffsetCss = 22;
+constexpr int32_t kStealthPopupStaggerSlopCss = 4;
+// AppWindow::CreateNewContentWindow (AppWindow.cpp:2245): the window a popup
+// is created with, 615 x 480, before its chrome has loaded.
+constexpr int32_t kStealthPopupInitialWidth = 615;
+constexpr int32_t kStealthPopupInitialHeight = 480;
+// SizeOpenedWindow (nsWindowWatcher.cpp:2395, :2402): a size the page gave is
+// at least 100 CSS pixels.
+constexpr int32_t kStealthPopupMinContentCss = 100;
+
+/**
+ * The chrome around a popup's content in CSS pixels, as SizeOpenedWindow
+ * computes it (nsWindowWatcher.cpp:2298-2316): the window's size rounded to
+ * CSS pixels minus the content's, each rounded on its own. The window is the
+ * initial one (aInitialDevice); the content is that minus the declared chrome
+ * (aChromeDevice: the popup UI plus the border for the height, two borders
+ * for the width). Rounding each term is why this is not chromeDevice / scale:
+ * at 2x the 153 device pixels of height are 76 CSS pixels, not 76.5.
+ */
+int32_t StealthPopupChromeCssPixels(int32_t aInitialDevice,
+                                    int32_t aChromeDevice, float aScale);
+
+/**
+ * SizeOpenedWindow's clamp of one axis (nsWindowWatcher.cpp:2434-2452): when
+ * the window ends past aAvailEnd it is moved back so it ends there, then it
+ * does not start before aAvailStart. Device pixels.
+ */
+int32_t StealthClampPopupAxis(int32_t aPosition, int32_t aWindowSize,
+                              int32_t aAvailStart, int32_t aAvailEnd);
+
+/**
+ * AppWindow::StaggerPosition (AppWindow.cpp:1347-1470) on the declared
+ * positions of the other browser windows (aOthers: the maximized main window
+ * at (-border, -border), other popups at their declared position, never their
+ * real one). The window is aWindowSize device pixels, the screen is aAvail.
+ * Returns aStart when nothing collides.
+ */
+LayoutDeviceIntPoint StealthStaggerPopupPosition(
+    const LayoutDeviceIntPoint& aStart, float aScale,
+    Span<const LayoutDeviceIntPoint> aOthers,
+    const LayoutDeviceIntSize& aWindowSize, const LayoutDeviceIntRect& aAvail);
+
+/**
+ * nsWindow::ConstrainPosition on Windows (nsWindow.cpp:2318-2381) with
+ * nsIWidget::ConstrainPositionToBounds (nsIWidget.cpp:1724-1755): the work
+ * area inflated by the resize border (aBorder: left, right and bottom), the
+ * window kept inside it; a window at (0, 0) is left alone.
+ */
+LayoutDeviceIntPoint StealthConstrainPopupPosition(
+    const LayoutDeviceIntPoint& aPoint, const LayoutDeviceIntSize& aWindowSize,
+    const LayoutDeviceIntRect& aAvail, int32_t aBorder);
+
+/**
+ * What the page asked for in window.open's features, as SizeOpenedWindow sees
+ * it. Left and top are device pixels (CalcSizeSpec's desktop pixels, which are
+ * device pixels on Windows); width and height are CSS pixels.
+ */
+struct StealthPopupRequest {
+  Maybe<int32_t> mLeft;
+  Maybe<int32_t> mTop;
+  // The width and height the page gave, outer or inner; Nothing() when it gave
+  // none, and the popup is then the initial window.
+  Maybe<int32_t> mWidth;
+  Maybe<int32_t> mHeight;
+  // True when the size is the content's (innerWidth / width), so the chrome is
+  // added to it; false for an outer size.
+  bool mWidthIsInner = false;
+  bool mHeightIsInner = false;
+};
+
+/**
+ * The declared device position of a popup at birth. aFrame is the declared
+ * window frame (only the border and the popup UI are read), aAvail the
+ * declared work area, aScale layout.css.devPixelsPerPx, aOthers the declared
+ * positions of the other navigator:browser windows.
+ *
+ * The base is the markup's position, staggered and constrained; an axis the
+ * page gave replaces it; then the clamp of SizeOpenedWindow keeps the window
+ * inside the work area, on both axes, with the window's size as Firefox
+ * computes it: round((max(100, height) + chrome) * scale), the 100 only when
+ * the page gave a size.
+ */
+LayoutDeviceIntPoint StealthDeclaredPopupPosition(
+    const StealthPopupRequest& aRequest, const StealthWindowFrame& aFrame,
+    const LayoutDeviceIntRect& aAvail, float aScale,
+    Span<const LayoutDeviceIntPoint> aOthers);
 
 /**
  * Does a window answer the DECLARED outer size, or its own real one?
@@ -168,37 +314,101 @@ Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow();
 bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter);
 
 /**
- * The SHIFT between the real content origin and the declared one, in app
- * units. Nothing() when the engine is off.
- *
- * It exists because a plain substitution is not enough, and the first version
- * of this patch proved it in the field. `mozInnerScreenX` returned the declared
- * origin to EVERY window, iframes included: measured on 2026-08-10, an iframe
- * placed at (220, 150) in the page answered (0, 85) exactly like the top-level
- * document, and inside that iframe the invariant above gave 220 against 0. The
- * value is not SUBSTITUTED, the ANCHOR is moved: the caller passes its own real
- * origin and adds the shift, so the offset between frames stays the true one at
- * any depth.
- *
- * `aPopupWindowOrigin` decides WHICH window is declared. Nothing() is the
- * maximized main window, whose content starts at (0, UI) on the declared
- * screen. Some(p) is a popup, whose position is the REAL one (chosen by the
- * page, or by nsWindowWatcher from the declaration when the page does not ask
- * for one) and whose content starts at p + (border, popup UI). In device
- * pixels; `aAppUnitsPerDevPixel` is the one of the caller's pres context.
- *
- * One function only, because the shift is a fact and facts live in one place:
- * when it was computed in three places, the fourth consumer was forgotten.
+ * The state of the top-level window that the declared window is built from.
+ * Everything in it is the top's DECLARED state, except the top's real inner
+ * size, which only sizes a popup (layout depends on it, so it stays real) and
+ * the real outer size, which only says whether a window has a size yet.
  */
-//
-// `aFullscreen` comes first: a window in fullscreen, main or popup, is the
-// whole declared screen, its content at (0, 0) like retail's (no UI, no
-// border). Until 2026-11-01 the main window kept declaring the maximized one
-// in fullscreen, content 85 below the top while the page filled the screen.
-Maybe<nsPoint> StealthDeclaredOriginShift(
-    const nsPoint& aRealContentOrigin,
-    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen,
-    int32_t aAppUnitsPerDevPixel);
+struct StealthWindowState {
+  // Was the top-level window opened as a popup (window.open with features)?
+  bool mPopup = false;
+  // The popup's declared position, device px; Nothing() until it is declared,
+  // when the declared default (StealthWindowFrame::mPopupPosition) stands in.
+  Maybe<LayoutDeviceIntPoint> mPopupPosition;
+  // Is the top-level window in fullscreen (the top-level widget's size mode)?
+  bool mFullscreen = false;
+  // The top's real inner size, device px. Read for a popup only.
+  LayoutDeviceIntSize mTopInner;
+  // The real outer size of the window being declared, device px. 0x0 is a
+  // window that has not been sized yet (StealthOuterSizeIsDeclared).
+  LayoutDeviceIntSize mRealOuter;
+  // Is the window an out-of-process frame in the top-level one? Its chrome
+  // offset is 0 (BrowserChild asserts it): the frame's place in the top
+  // document is in the matrix it receives, and the top's chrome offset is
+  // carried by the top tab alone.
+  bool mBridged = false;
+};
+
+/**
+ * What the parent sends a content process in a DimensionInfo about the window,
+ * declared: the outer rect (position and size), the client offset (the window
+ * origin W is rect.TopLeft() + clientOffset) and the chrome offset.
+ */
+struct StealthDeclaredDimensions {
+  LayoutDeviceIntRect mRect;
+  LayoutDeviceIntPoint mClientOffset;
+  LayoutDeviceIntPoint mChromeOffset;
+};
+
+/**
+ * The declared window of a top-level window, device pixels. Pure: the declared
+ * frame, the declared maximized window and the declared screen are arguments.
+ * It never reads the real position of anything, so it gives the same answer
+ * whatever real rect it is asked about.
+ *
+ *   maximized: rect = aMaximized; client offset = client origin - rect origin
+ *     = (border, border); chrome offset (0, maximized UI).
+ *   popup: rect = (declared position, top inner + (2 border, popup UI +
+ *     border)); client offset (border, client top); chrome offset
+ *     (0, popup UI - client top).
+ *   fullscreen: rect = (0, 0, aScreen); both offsets 0.
+ *
+ * A window with no real size yet (mRealOuter 0x0) stays empty: f(0x0) = 0x0,
+ * and its offsets are 0, as on retail before the first layout.
+ */
+StealthDeclaredDimensions StealthDeclaredWindowDimensions(
+    const StealthWindowFrame& aFrame, const LayoutDeviceIntRect& aMaximized,
+    const LayoutDeviceIntSize& aScreen, const StealthWindowState& aState);
+
+/**
+ * StealthDeclaredWindowDimensions with the declared frame, maximized window
+ * and screen of the prefs, for a window of scale aScale. Nothing() when the
+ * engine is off.
+ */
+Maybe<StealthDeclaredDimensions> StealthDeclaredWindowDimensionsNow(
+    const CSSToLayoutDeviceScale& aScale, const StealthWindowState& aState);
+
+/**
+ * A window.moveTo/moveBy/resizeTo/resizeBy request, in declared space, as the
+ * content process sends it: each coordinate is absolute, device px, and only
+ * the ones the page changed are present.
+ */
+struct StealthOuterRequest {
+  Maybe<int32_t> mX;
+  Maybe<int32_t> mY;
+  Maybe<int32_t> mWidth;
+  Maybe<int32_t> mHeight;
+};
+
+/**
+ * The same request for the real window. The page sees the declared outer rect
+ * aDeclared and the window really has aReal, so a coordinate the page moves by
+ * d moves the real window by d: real = aReal + (request - aDeclared), on each
+ * axis. For the size that is the request, minus the declared frame, plus the
+ * real frame, when the inner size is the same on both sides. Pure.
+ */
+StealthOuterRequest StealthRealOuterRequest(
+    const StealthOuterRequest& aRequest, const LayoutDeviceIntRect& aDeclared,
+    const LayoutDeviceIntRect& aReal);
+
+/**
+ * The popup's new declared position after a request: the requested
+ * coordinates over the current declared position. Nothing() when the request
+ * moves nothing.
+ */
+Maybe<LayoutDeviceIntPoint> StealthRequestedPosition(
+    const StealthOuterRequest& aRequest,
+    const LayoutDeviceIntPoint& aDeclaredPosition);
 
 /**
  * The colour depth the persona declares (zoom.stealth.screen.color_depth), or 0

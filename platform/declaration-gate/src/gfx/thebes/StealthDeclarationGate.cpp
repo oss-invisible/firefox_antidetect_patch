@@ -4,7 +4,9 @@
 
 #include "StealthDeclarationGate.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
 
 #include "mozilla/Assertions.h"
 #include "mozilla/Atomics.h"
@@ -231,6 +233,10 @@ void StealthAssertDeclarationsComplete() {
        []() { return StaticPrefs::zoom_stealth_screen_popup_ui(); }, 1},
       {"zoom.stealth.screen.popup_position",
        []() { return StaticPrefs::zoom_stealth_screen_popup_position(); }, 0},
+      // The popup's client top, added with the out-of-process frame's
+      // pre-matrix origin: a popup's client area always starts below its top.
+      {"zoom.stealth.screen.popup_client_top",
+       []() { return StaticPrefs::zoom_stealth_screen_popup_client_top(); }, 1},
       {"zoom.stealth.screen.avail_device_width",
        []() { return StaticPrefs::zoom_stealth_screen_avail_device_width(); },
        320},
@@ -360,9 +366,10 @@ Maybe<StealthWindowFrame> StealthDeclaredWindowFrame() {
       StaticPrefs::zoom_stealth_screen_frame_border(),
       StaticPrefs::zoom_stealth_screen_maximized_ui(),
       StaticPrefs::zoom_stealth_screen_popup_ui(),
-      StaticPrefs::zoom_stealth_screen_popup_position()};
+      StaticPrefs::zoom_stealth_screen_popup_position(),
+      StaticPrefs::zoom_stealth_screen_popup_client_top()};
   if (frame.mBorder < 0 || frame.mMaximizedUi < 1 || frame.mPopupUi < 1 ||
-      frame.mPopupPosition < 0) {
+      frame.mPopupPosition < 0 || frame.mPopupClientTop < 1) {
     // Unreachable in practice: the gate refuses at launch in the parent, so a
     // process that is serving pages has these. Kept as a refusal rather than a
     // fallback, because the day it becomes reachable the right behaviour is
@@ -371,6 +378,20 @@ Maybe<StealthWindowFrame> StealthDeclaredWindowFrame() {
     return Nothing();
   }
   return Some(frame);
+}
+
+Maybe<LayoutDeviceIntRect> StealthDeclaredAvailDeviceRect() {
+  const Maybe<StealthWindowFrame> frame = StealthDeclaredWindowFrame();
+  if (frame.isNothing()) {
+    return Nothing();
+  }
+  const int32_t w = StaticPrefs::zoom_stealth_screen_avail_device_width();
+  const int32_t h = StaticPrefs::zoom_stealth_screen_avail_device_height();
+  if (w < 320 || h < 240) {
+    StealthAssertDeclarationsComplete();
+    return Nothing();
+  }
+  return Some(LayoutDeviceIntRect(0, 0, w, h));
 }
 
 Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow() {
@@ -385,32 +406,296 @@ Maybe<LayoutDeviceIntRect> StealthDeclaredMaximizedWindow() {
     return Nothing();
   }
   const int32_t b = frame->mBorder;
-  return Some(LayoutDeviceIntRect(-b, -b, w + 2 * b, h + 2 * b));
+  const LayoutDeviceIntPoint topLeft = StealthMaximizedWindowTopLeft(*frame);
+  return Some(LayoutDeviceIntRect(topLeft.x, topLeft.y, w + 2 * b, h + 2 * b));
+}
+
+LayoutDeviceIntPoint StealthMaximizedWindowTopLeft(
+    const StealthWindowFrame& aFrame) {
+  return LayoutDeviceIntPoint(-aFrame.mBorder, -aFrame.mBorder);
+}
+
+LayoutDeviceIntPoint StealthDeclaredContentOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen) {
+  // A fullscreen window's content is the screen; the maximized window's
+  // starts at the screen's left edge, the UI height below its top; a popup's
+  // starts a border in and the popup UI down from wherever the popup really is.
+  return aFullscreen ? LayoutDeviceIntPoint(0, 0)
+         : aPopupWindowOrigin
+             ? *aPopupWindowOrigin +
+                   LayoutDeviceIntPoint(aFrame.mBorder, aFrame.mPopupUi)
+             : LayoutDeviceIntPoint(0, aFrame.mMaximizedUi);
+}
+
+LayoutDeviceIntPoint StealthDeclaredClientOrigin(
+    const StealthWindowFrame& aFrame,
+    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen) {
+  if (aFullscreen) {
+    return LayoutDeviceIntPoint(0, 0);
+  }
+  if (aPopupWindowOrigin) {
+    return *aPopupWindowOrigin +
+           LayoutDeviceIntPoint(aFrame.mBorder, aFrame.mPopupClientTop);
+  }
+  return StealthMaximizedWindowTopLeft(aFrame) +
+         LayoutDeviceIntPoint(aFrame.mBorder, aFrame.mBorder);
+}
+
+int32_t StealthPopupChromeCssPixels(int32_t aInitialDevice,
+                                    int32_t aChromeDevice, float aScale) {
+  // nsWindowWatcher.cpp:2298-2316: each size is rounded to CSS pixels on its
+  // own, then subtracted.
+  const int32_t window = std::lround(float(aInitialDevice) / aScale);
+  const int32_t content = std::lround(float(aInitialDevice - aChromeDevice) /
+                                      aScale);
+  return window - content;
+}
+
+int32_t StealthClampPopupAxis(int32_t aPosition, int32_t aWindowSize,
+                              int32_t aAvailStart, int32_t aAvailEnd) {
+  // nsWindowWatcher.cpp:2434-2452, the same order: the end first, then the
+  // start, so a window larger than the work area keeps its start on screen.
+  int32_t position = aPosition;
+  if (int64_t(position) + int64_t(aWindowSize) > int64_t(aAvailEnd)) {
+    position = aAvailEnd - aWindowSize;
+  }
+  if (position < aAvailStart) {
+    position = aAvailStart;
+  }
+  return position;
+}
+
+LayoutDeviceIntPoint StealthStaggerPopupPosition(
+    const LayoutDeviceIntPoint& aStart, float aScale,
+    Span<const LayoutDeviceIntPoint> aOthers,
+    const LayoutDeviceIntSize& aWindowSize, const LayoutDeviceIntRect& aAvail) {
+  // AppWindow::StaggerPosition (AppWindow.cpp:1347-1470). The constants are
+  // CSS pixels turned into device pixels with the screen's scale
+  // (AppWindow.cpp:1389-1390); the window's size is the CSS size LoadPositionFromXUL
+  // gives it (AppWindow.cpp:1143-1153, 1392-1393), turned back with the same scale.
+  const int32_t kOffset =
+      std::lround(float(kStealthPopupStaggerOffsetCss) * aScale);
+  const int32_t kSlop =
+      std::lround(float(kStealthPopupStaggerSlopCss) * aScale);
+  if (kOffset < 1) {
+    // Firefox would never leave its loop; no declared scale gets here.
+    return aStart;
+  }
+  const int32_t specWidth = std::lround(
+      float(std::lround(float(aWindowSize.width) / aScale)) * aScale);
+  const int32_t specHeight = std::lround(
+      float(std::lround(float(aWindowSize.height) / aScale)) * aScale);
+
+  int32_t x = aStart.x;
+  int32_t y = aStart.y;
+  int bouncedX = 0;  // bounced off the vertical edge of the screen
+  int bouncedY = 0;  // bounced off the horizontal edge
+  bool keepTrying;
+  // Firefox's loop ends by its bounces; the count only bounds a work area too
+  // small for the window.
+  int guard = 10000;
+  do {
+    keepTrying = false;
+    for (const LayoutDeviceIntPoint& other : aOthers) {
+      if (std::abs(other.x - x) <= kSlop && std::abs(other.y - y) <= kSlop) {
+        // Collision: offset and start over.
+        if (bouncedX & 0x1) {
+          x -= kOffset;
+        } else {
+          x += kOffset;
+        }
+        y += kOffset;
+
+        // Moving right and past the edge: bounce.
+        if (!(bouncedX & 0x1) && (x + specWidth) > aAvail.XMost()) {
+          x = aAvail.XMost() - specWidth;
+          ++bouncedX;
+        }
+        // Moving left and past the edge: bounce.
+        if ((bouncedX & 0x1) && x < aAvail.X()) {
+          x = aAvail.X();
+          ++bouncedX;
+        }
+        // At the bottom: back to the top.
+        if (y + specHeight > aAvail.YMost()) {
+          y = aAvail.Y();
+          ++bouncedY;
+        }
+        keepTrying = bouncedX < 2 || bouncedY == 0;
+        break;
+      }
+    }
+  } while (keepTrying && --guard > 0);
+  return LayoutDeviceIntPoint(x, y);
+}
+
+LayoutDeviceIntPoint StealthConstrainPopupPosition(
+    const LayoutDeviceIntPoint& aPoint, const LayoutDeviceIntSize& aWindowSize,
+    const LayoutDeviceIntRect& aAvail, int32_t aBorder) {
+  // nsWindow::ConstrainPosition (nsWindow.cpp:2318-2381): a window at (0, 0)
+  // is left alone; the work area is inflated by the resize border on the
+  // left, right and bottom; ConstrainPositionToBounds (nsIWidget.cpp:1724-1755)
+  // keeps the window in it, the end first and then the start.
+  if (aPoint.x == 0 && aPoint.y == 0) {
+    return aPoint;
+  }
+  const LayoutDeviceIntRect screen(aAvail.X() - aBorder, aAvail.Y(),
+                                   aAvail.Width() + 2 * aBorder,
+                                   aAvail.Height() + aBorder);
+  const int32_t width = std::max(aWindowSize.width, 1);
+  const int32_t height = std::max(aWindowSize.height, 1);
+  const int32_t maxX = screen.XMost() - width;
+  const int32_t maxY = screen.YMost() - height;
+  LayoutDeviceIntPoint point = aPoint;
+  if (point.x >= maxX) {
+    point.x = maxX;
+  }
+  if (point.x < screen.X()) {
+    point.x = screen.X();
+  }
+  if (point.y >= maxY) {
+    point.y = maxY;
+  }
+  if (point.y < screen.Y()) {
+    point.y = screen.Y();
+  }
+  return point;
+}
+
+LayoutDeviceIntPoint StealthDeclaredPopupPosition(
+    const StealthPopupRequest& aRequest, const StealthWindowFrame& aFrame,
+    const LayoutDeviceIntRect& aAvail, float aScale,
+    Span<const LayoutDeviceIntPoint> aOthers) {
+  const int32_t border = aFrame.mBorder;
+  const LayoutDeviceIntSize initial(kStealthPopupInitialWidth,
+                                    kStealthPopupInitialHeight);
+
+  // Where the window is when the page's features reach SizeOpenedWindow: the
+  // markup's position, staggered, constrained (LoadPositionFromXUL).
+  const LayoutDeviceIntPoint base = StealthConstrainPopupPosition(
+      StealthStaggerPopupPosition(
+          LayoutDeviceIntPoint(kStealthPopupXulPosition,
+                               kStealthPopupXulPosition),
+          aScale, aOthers, initial, aAvail),
+      initial, aAvail, border);
+
+  // The window's size in CSS pixels as SizeOpenedWindow has it.
+  const int32_t chromeWidth =
+      StealthPopupChromeCssPixels(kStealthPopupInitialWidth, 2 * border, aScale);
+  const int32_t chromeHeight = StealthPopupChromeCssPixels(
+      kStealthPopupInitialHeight, aFrame.mPopupUi + border, aScale);
+  int32_t width = aRequest.mWidth
+                      ? *aRequest.mWidth
+                      : std::lround(float(kStealthPopupInitialWidth) / aScale);
+  int32_t height =
+      aRequest.mHeight
+          ? *aRequest.mHeight
+          : std::lround(float(kStealthPopupInitialHeight) / aScale);
+  if (aRequest.mWidth || aRequest.mHeight) {
+    if (height < kStealthPopupMinContentCss) {
+      height = kStealthPopupMinContentCss;
+    }
+    if (width < kStealthPopupMinContentCss) {
+      width = kStealthPopupMinContentCss;
+    }
+  }
+  const int32_t extraWidth =
+      aRequest.mWidth && aRequest.mWidthIsInner ? chromeWidth : 0;
+  const int32_t extraHeight =
+      aRequest.mHeight && aRequest.mHeightIsInner ? chromeHeight : 0;
+  const int32_t windowWidth =
+      std::lround(float(width + extraWidth) * aScale);
+  const int32_t windowHeight =
+      std::lround(float(height + extraHeight) * aScale);
+
+  return LayoutDeviceIntPoint(
+      StealthClampPopupAxis(aRequest.mLeft ? *aRequest.mLeft : base.x,
+                            windowWidth, aAvail.X(), aAvail.XMost()),
+      StealthClampPopupAxis(aRequest.mTop ? *aRequest.mTop : base.y,
+                            windowHeight, aAvail.Y(), aAvail.YMost()));
 }
 
 bool StealthOuterSizeIsDeclared(const LayoutDeviceIntSize& aRealOuter) {
   return aRealOuter.width != 0 || aRealOuter.height != 0;
 }
 
-Maybe<nsPoint> StealthDeclaredOriginShift(
-    const nsPoint& aRealContentOrigin,
-    const Maybe<LayoutDeviceIntPoint>& aPopupWindowOrigin, bool aFullscreen,
-    int32_t aAppUnitsPerDevPixel) {
+StealthDeclaredDimensions StealthDeclaredWindowDimensions(
+    const StealthWindowFrame& aFrame, const LayoutDeviceIntRect& aMaximized,
+    const LayoutDeviceIntSize& aScreen, const StealthWindowState& aState) {
+  // f(0x0) = 0x0: a window that has no size yet stays empty, with no offsets.
+  if (!StealthOuterSizeIsDeclared(aState.mRealOuter)) {
+    return StealthDeclaredDimensions{};
+  }
+  // The popup's position: declared at birth, or the declared default, never
+  // a position that anything real decided.
+  const Maybe<LayoutDeviceIntPoint> popup =
+      aState.mPopup
+          ? Some(aState.mPopupPosition.valueOr(LayoutDeviceIntPoint(
+                aFrame.mPopupPosition, aFrame.mPopupPosition)))
+          : Nothing();
+  const LayoutDeviceIntPoint client =
+      StealthDeclaredClientOrigin(aFrame, popup, aState.mFullscreen);
+  const LayoutDeviceIntPoint content =
+      StealthDeclaredContentOrigin(aFrame, popup, aState.mFullscreen);
+  LayoutDeviceIntRect rect;
+  if (aState.mFullscreen) {
+    rect = LayoutDeviceIntRect(LayoutDeviceIntPoint(0, 0), aScreen);
+  } else if (popup) {
+    rect = LayoutDeviceIntRect(
+        *popup, aState.mTopInner + LayoutDeviceIntSize(2 * aFrame.mBorder,
+                                                       aFrame.mPopupUi +
+                                                           aFrame.mBorder));
+  } else {
+    rect = aMaximized;
+  }
+  return StealthDeclaredDimensions{
+      rect, client - rect.TopLeft(),
+      aState.mBridged ? LayoutDeviceIntPoint() : content - client};
+}
+
+Maybe<StealthDeclaredDimensions> StealthDeclaredWindowDimensionsNow(
+    const CSSToLayoutDeviceScale& aScale, const StealthWindowState& aState) {
   const Maybe<StealthWindowFrame> frame = StealthDeclaredWindowFrame();
   if (frame.isNothing()) {
     return Nothing();
   }
-  // A fullscreen window's content is the screen; the maximized window's
-  // starts at the screen's left edge, the UI height below its top; a popup's
-  // starts a border in and the popup UI down from wherever the popup really is.
-  const LayoutDeviceIntPoint declared =
-      aFullscreen ? LayoutDeviceIntPoint(0, 0)
-      : aPopupWindowOrigin
-          ? *aPopupWindowOrigin +
-                LayoutDeviceIntPoint(frame->mBorder, frame->mPopupUi)
-          : LayoutDeviceIntPoint(0, frame->mMaximizedUi);
-  return Some(LayoutDevicePixel::ToAppUnits(declared, aAppUnitsPerDevPixel) -
-              aRealContentOrigin);
+  // The same guard StealthOuterSize had: a declaration that is incomplete
+  // refuses here, before a value is handed back.
+  StealthAssertDeclarationsComplete();
+  const Maybe<LayoutDeviceIntRect> maximized = StealthDeclaredMaximizedWindow();
+  const Maybe<CSSIntRect> screen = StealthDeclaredScreenRect();
+  if (maximized.isNothing() || screen.isNothing()) {
+    // Unreachable: the gate refuses at launch without the declaration.
+    return Nothing();
+  }
+  return Some(StealthDeclaredWindowDimensions(
+      *frame, *maximized,
+      RoundedToInt(CSSSize(screen->width, screen->height) * aScale), aState));
+}
+
+StealthOuterRequest StealthRealOuterRequest(
+    const StealthOuterRequest& aRequest, const LayoutDeviceIntRect& aDeclared,
+    const LayoutDeviceIntRect& aReal) {
+  const auto toReal = [](const Maybe<int32_t>& aValue, int32_t aDeclaredValue,
+                         int32_t aRealValue) -> Maybe<int32_t> {
+    return aValue ? Some(aRealValue + (*aValue - aDeclaredValue)) : Nothing();
+  };
+  return StealthOuterRequest{
+      toReal(aRequest.mX, aDeclared.x, aReal.x),
+      toReal(aRequest.mY, aDeclared.y, aReal.y),
+      toReal(aRequest.mWidth, aDeclared.width, aReal.width),
+      toReal(aRequest.mHeight, aDeclared.height, aReal.height)};
+}
+
+Maybe<LayoutDeviceIntPoint> StealthRequestedPosition(
+    const StealthOuterRequest& aRequest,
+    const LayoutDeviceIntPoint& aDeclaredPosition) {
+  if (!aRequest.mX && !aRequest.mY) {
+    return Nothing();
+  }
+  return Some(LayoutDeviceIntPoint(aRequest.mX.valueOr(aDeclaredPosition.x),
+                                   aRequest.mY.valueOr(aDeclaredPosition.y)));
 }
 
 int32_t StealthDeclaredPixelDepth() {

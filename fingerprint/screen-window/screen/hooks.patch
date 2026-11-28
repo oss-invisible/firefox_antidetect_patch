@@ -35,25 +35,3 @@ index 3b48a7f1e2549f9fa9beed1f3726f4fc3b1fca72..652fdbde3ac5377fa07eeff2958cb4b7
    // Return window inner rect to prevent fingerprinting.
    if (ShouldResistFingerprinting(RFPTarget::ScreenAvailRect)) {
      return GetTopWindowInnerRectForRFP();
-diff --git a/layout/base/nsPresContext.cpp b/layout/base/nsPresContext.cpp
-index 415fe207ad5146470ad2d268400f2f91821bdcce..228e34fdb4fbd32a808233a06e1af69bfb20b0f1 100644
---- a/layout/base/nsPresContext.cpp
-+++ b/layout/base/nsPresContext.cpp
-@@ -108,6 +108,8 @@
- #include "nsIImageLoadingContent.h"
- #include "nsServiceManagerUtils.h"
- 
-+#include "StealthInnerSizeSync.h"  // STEALTH-HOOK(fingerprint/screen-window/screen)
-+
- using namespace mozilla;
- using namespace mozilla::dom;
- using namespace mozilla::gfx;
-@@ -1461,7 +1463,7 @@ void nsPresContext::SetOverrideDPPX(float aDPPX) {
- }
- 
- void nsPresContext::UpdateInnerSizeSpoofedForRFP() {
--  if (!mDocument->ShouldResistFingerprinting(RFPTarget::WindowOuterSize) ||
-+  if (!StealthRfpOrEngineActive(mDocument->ShouldResistFingerprinting(RFPTarget::WindowOuterSize)) ||  // STEALTH-HOOK(fingerprint/screen-window/screen)
-       !mDocument->GetBrowsingContext() ||
-       !mDocument->GetBrowsingContext()->IsTop()) {
-     return;

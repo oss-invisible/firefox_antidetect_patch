@@ -1,14 +1,9 @@
 {
  "modified": [
-  "dom/base/nsScreen.cpp",
-  "layout/base/nsPresContext.cpp"
+  "dom/base/nsScreen.cpp"
  ],
- "added": {
-  "layout/base/StealthInnerSizeSync.h": "100644"
- },
- "sha256": {
-  "layout/base/StealthInnerSizeSync.h": "216389e4c8a0eea61c0ba995b9915af12f1957ea00f7920dfc8629fbd0984476"
- },
+ "added": {},
+ "sha256": {},
  "inventory": [
   {
    "file": "dom/base/nsScreen.cpp",
@@ -33,26 +28,6 @@
      "notes"
     ],
     "why": "Pref names are the dotted names in StaticPrefList.yaml (zoom_stealth_screen_width -> zoom.stealth.screen.width), not underscored."
-   }
-  },
-  {
-   "file": "layout/base/nsPresContext.cpp",
-   "category": "spoof",
-   "feature": "screen-metrics",
-   "prefs": [],
-   "added": 3,
-   "removed": 1,
-   "hunks": 2,
-   "inline_logic_lines": 0,
-   "hookable": "already-hook",
-   "anchor": "nsPresContext::UpdateInnerSizeSpoofedForRFP",
-   "notes": "The synced top-level inner size is now also filled when the stealth engine is active, not only under RFP. The comment's claim that every other reader of the field gates on RFP is MOSTLY CONFIRMED: nsScreen.cpp:100 and :161 (via GetTopWindowInnerRectForRFP, nsScreen.cpp:271), nsGlobalWindowInner.cpp:7584-7586, ScreenOrientation.cpp:706-771 and nsGlobalWindowOuter.cpp:3531-3535 all sit behind ShouldResistFingerprinting. One reader does not: dom/base/nsGlobalWindowOuter.cpp:3570 reads it under IsInStealthPopup (the intended consumer, gated on the stealth engine, not on RFP). Uses gfx::StealthEngineActive from StealthDeclarationGate.h (included here). Comment cites 70-known-bugs.md B258.",
-   "verifier": {
-    "changed": [
-     "inline_logic_lines",
-     "notes"
-    ],
-    "why": "Recount; the every-other-reader-gates-on-RFP claim was checked and has one exception."
    }
   }
  ]

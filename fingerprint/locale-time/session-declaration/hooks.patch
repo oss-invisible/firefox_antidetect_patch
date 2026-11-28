@@ -19,18 +19,19 @@ index 222e26b30adee294e42d6bcabff2268bba20234b..415491a012f54cb6d19398f801ecc841
  
  if CONFIG["FUZZING"]:
 diff --git a/dom/base/nsGlobalWindowOuter.cpp b/dom/base/nsGlobalWindowOuter.cpp
-index 59a1a4671078a3fc3491a5200c30d908fd87cbf1..6f072ae4ff4528e187e2338dc5793e0881161d9c 100644
+index 59a1a4671078a3fc3491a5200c30d908fd87cbf1..16d1dcdf246d5ba38992bd380724852f656e186f 100644
 --- a/dom/base/nsGlobalWindowOuter.cpp
 +++ b/dom/base/nsGlobalWindowOuter.cpp
-@@ -235,6 +235,7 @@
+@@ -235,6 +235,8 @@
  #include "prrng.h"
  #include "xpcprivate.h"
  
 +#include "mozilla/dom/StealthSessionDeclaration.h"  // STEALTH-HOOK(fingerprint/locale-time/session-declaration)
++
  #ifdef MOZ_WEBSPEECH
  #  include "mozilla/dom/SpeechSynthesis.h"
  #endif
-@@ -2095,8 +2096,7 @@ static nsresult CreateNativeGlobalForInner(
+@@ -2095,8 +2097,7 @@ static nsresult CreateNativeGlobalForInner(
        aDocument->ShouldResistFingerprinting(RFPTarget::JSDateTimeUTC),
        aDocument->ShouldResistFingerprinting(RFPTarget::JSMathFdlibm),
        aDocument->ShouldResistFingerprinting(RFPTarget::JSLocale),

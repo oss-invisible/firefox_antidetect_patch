@@ -1,5 +1,29 @@
 [
  {
+  "file": "docshell/base/CanonicalBrowsingContext.h",
+  "function": "class CanonicalBrowsingContext final : public BrowsingContext {",
+  "kind": "add",
+  "form": "member",
+  "line": "  Maybe<LayoutDeviceIntPoint> StealthPopupPosition() const { return mStealthPopupPosition; }  // STEALTH-HOOK(fingerprint/screen-window/popup-position)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "docshell/base/CanonicalBrowsingContext.h",
+  "function": "class CanonicalBrowsingContext final : public BrowsingContext {",
+  "kind": "add",
+  "form": "member",
+  "line": "  void StealthSetPopupPosition(const LayoutDeviceIntPoint& aPoint);  // STEALTH-HOOK(fingerprint/screen-window/popup-position)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "docshell/base/CanonicalBrowsingContext.h",
+  "function": "class CanonicalBrowsingContext final : public BrowsingContext {",
+  "kind": "add",
+  "form": "member",
+  "line": "  Maybe<LayoutDeviceIntPoint> mStealthPopupPosition;  // STEALTH-HOOK(fingerprint/screen-window/popup-position)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
   "file": "toolkit/components/windowwatcher/moz.build",
   "function": "UNIFIED_SOURCES += [",
   "kind": "add",
@@ -20,8 +44,8 @@
   "function": "static void SizeOpenedWindow(nsIDocShellTreeOwner* aTreeOwner,",
   "kind": "add",
   "form": "anchor",
-  "line": "  mozilla::StealthPlacePopupAtDefault(aIsCallerChrome, treeOwnerAsWin, aSizeSpec.mLeft.isSome(), aSizeSpec.mTop.isSome(), left, top, positionSpecified);  // STEALTH-HOOK(fingerprint/screen-window/popup-position)",
-  "test": "wrapper:tests/test_popup_geometry_is_the_declared_frame_e2e.py::test_a_popup_is_its_inner_size_plus_the_declared_frame",
+  "line": "  mozilla::StealthPlacePopupAtDefault(aIsCallerChrome, treeOwnerAsWin, aSizeSpec, left, top, positionSpecified);  // STEALTH-HOOK(fingerprint/screen-window/popup-position)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]",
   "anchor": "Mozilla's `bool positionSpecified = aSizeSpec.PositionSpecified();`",
   "why": "places a popup opened without a position at the default position and updates `positionSpecified`, a local Mozilla reads on the next lines, through the reference; `left`, `top` and `treeOwnerAsWin` are the geometry locals of the function that the placement reads, so a guard at the head of SizeOpenedWindow finds them unborn"
  }

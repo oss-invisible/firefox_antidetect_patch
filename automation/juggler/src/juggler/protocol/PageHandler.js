@@ -1865,11 +1865,33 @@ export class PageHandler {
         return x >= 0 && y >= 0 && x * zoom <= rect.width && y * zoom <= rect.height;
       },
       // The point in the window. Read when asked, so after any scroll of the
-      // <browser> itself.
+      // <browser> itself. The <browser> starts at a whole number of device
+      // pixels: see _browserOrigin.
       inWindow: (x, y) => {
-        const rect = browser.getBoundingClientRect();
-        return { x: x * zoom + rect.left, y: y * zoom + rect.top };
+        const origin = this._browserOrigin();
+        return { x: x * zoom + origin.left, y: y * zoom + origin.top };
       },
+    };
+  }
+
+  /**
+   * Where the <browser> starts in this window, in CSS pixels, snapped to a WHOLE number of device pixels.
+   *
+   * The parent converts every input event for the page with the offset of the <browser>, and that offset is whole at its birth
+   * (nsDisplayRemote's offset is rounded to device pixels, layout/generic/StealthRemoteLayerOffset.h, the same rounding as
+   * BrowserParent::GetChildProcessOffset). The layout rect of the <browser> is not whole where the chrome above it is not: a
+   * fractional origin added here made the page see R(R(x * s + T) - T), one pixel off for some x. With the whole origin the page
+   * sees R(x * s), as for a real mouse. The rounding is Gecko's: the origin in app units (60 per CSS pixel), divided by the
+   * window's app units per device pixel (60 / devicePixelRatio, a whole number), rounded half up.
+   */
+  _browserOrigin() {
+    const AU_PER_CSS_PX = 60;
+    const rect = this._pageTarget._linkedBrowser.getBoundingClientRect();
+    const appUnitsPerDevicePixel = Math.round(AU_PER_CSS_PX / this._pageTarget._window.devicePixelRatio);
+    const wholeDevicePixels = css => Math.round(Math.round(css * AU_PER_CSS_PX) / appUnitsPerDevicePixel);
+    return {
+      left: wholeDevicePixels(rect.left) * appUnitsPerDevicePixel / AU_PER_CSS_PX,
+      top: wholeDevicePixels(rect.top) * appUnitsPerDevicePixel / AU_PER_CSS_PX,
     };
   }
 

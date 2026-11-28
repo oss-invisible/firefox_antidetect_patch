@@ -45,6 +45,11 @@
   "linux_only": false
  },
  {
+  "suite": "StealthChromeOffset",
+  "windows_only": false,
+  "linux_only": false
+ },
+ {
   "suite": "StealthDebugger",
   "windows_only": false,
   "linux_only": false
@@ -191,6 +196,11 @@
  },
  {
   "suite": "StealthQuotaEstimate",
+  "windows_only": false,
+  "linux_only": false
+ },
+ {
+  "suite": "StealthScreenToReal",
   "windows_only": false,
   "linux_only": false
  },

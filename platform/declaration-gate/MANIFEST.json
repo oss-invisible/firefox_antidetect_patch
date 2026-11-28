@@ -21,8 +21,8 @@
  },
  "sha256": {
   "gfx/2d/StealthRefuse.h": "554b107d9b9b1ba184f022b40ae84408dcb76c37cf46cb2c6da4e6510fbfc710",
-  "gfx/thebes/StealthDeclarationGate.cpp": "0c57c0b206beed678e4fe5613d195abc2bfc61fa5239edc46745b29962106b77",
-  "gfx/thebes/StealthDeclarationGate.h": "ba79f56fc7cd1fb336627a060d3d95a539b2dc7e573e2d5575354881bf28e8a9",
+  "gfx/thebes/StealthDeclarationGate.cpp": "93ded1a080a2c51ea4b7095ad2c464a7e03b6a53c0fbe315e38974d67e284e21",
+  "gfx/thebes/StealthDeclarationGate.h": "dc8f654e26c8208ab3a51307f9dfd4e317a87951532c99585fb889ce78095520",
   "gfx/thebes/StealthDeclarationGate.mozbuild": "cbbc8078875d53833b9f4993f82130b6d500aae14ef493b06ec22f07c092e6b1",
   "gfx/thebes/StealthGfxFeatureStatus.cpp": "06684216cfc45365a0112bd6ab67cc4b7c45ba5f3d5bdb6f212901c12f2d03f6",
   "gfx/thebes/StealthGfxFeatureStatus.h": "bb41e5399851e11c0aaca43b9b7e45f0f6fb96d346d08b80feb2b25f7c67f1ec",

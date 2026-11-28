@@ -1,76 +1,136 @@
 [
  {
-  "file": "dom/base/nsGlobalWindowOuter.cpp",
+  "file": "browser/actors/ContextMenuParent.sys.mjs",
   "function": "",
   "kind": "add",
   "form": "registration",
-  "line": "#include \"StealthWindowGeometry.h\"  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "wrapper:tests/test_popup_geometry_is_the_declared_frame_e2e.py::test_a_popup_is_its_inner_size_plus_the_declared_frame"
+  "line": "import { StealthContextScreenToReal } from \"resource://gre/modules/StealthScreenMap.sys.mjs\";  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
  },
  {
-  "file": "dom/base/nsGlobalWindowOuter.cpp",
-  "function": "CSSIntSize nsGlobalWindowOuter::GetOuterSize(CallerType aCallerType,",
+  "file": "browser/actors/ContextMenuParent.sys.mjs",
+  "function": "export class ContextMenuParent extends JSWindowActorParent {",
   "kind": "add",
-  "form": "anchor",
-  "line": "  if (CSSIntSize size; StealthOuterSize(*this, size, aError)) return size;  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "wrapper:tests/test_popup_geometry_is_the_declared_frame_e2e.py::test_a_popup_is_its_inner_size_plus_the_declared_frame",
-  "anchor": "the `if (nsIGlobalObject::ShouldResistFingerprinting(aCallerType, RFPTarget::WindowOuterSize)) {...}` block of Mozilla",
-  "why": "G32: privacy.resistFingerprinting is only the core's default (an extra_prefs overlay can set it true), not locked by code, so a guard at the head of GetOuterSize would answer before Mozilla's RFP check; the hook stays right after it, where it is today."
+  "form": "rewire",
+  "line": "    context = StealthContextScreenToReal(wgp.browsingContext, context);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
  },
  {
-  "file": "dom/base/nsGlobalWindowOuter.cpp",
-  "function": "CSSIntPoint nsGlobalWindowOuter::GetScreenXY(CallerType aCallerType,",
-  "kind": "add",
-  "form": "anchor",
-  "line": "  if (CSSIntPoint point; StealthScreenXY(*this, treeOwnerAsWin, point)) return point;  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "wrapper:tests/test_popup_geometry_is_the_declared_frame_e2e.py::test_a_popup_is_its_inner_size_plus_the_declared_frame",
-  "anchor": "the `if (!treeOwnerAsWin) {...}` check of Mozilla",
-  "why": "needs Mozilla's local treeOwnerAsWin (the helper scales with it) and must answer after the RFP check (G32: RFP is only a default) and after the no-tree-owner error: a head guard would change both."
- },
- {
-  "file": "dom/base/nsGlobalWindowOuter.cpp",
-  "function": "float nsGlobalWindowOuter::GetMozInnerScreenXOuter(CallerType aCallerType) {",
-  "kind": "add",
-  "form": "anchor",
-  "line": "  if (const Maybe<float> x = StealthMozInnerScreenX(*this, r)) return *x;  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "wrapper:tests/test_a_click_in_an_iframe_lands_at_the_frames_own_screen_origin_e2e.py::test_a_real_click_in_an_iframe_has_the_screen_origin_of_the_iframe",
-  "anchor": "`nsRect r = GetInnerScreenRect();` of Mozilla",
-  "why": "the helper adds the declared shift to Mozilla's local rect r, which is computed after the RFP check (G32: RFP is only a default); a head guard would run GetInnerScreenRect twice and before the RFP check."
- },
- {
-  "file": "dom/base/nsGlobalWindowOuter.cpp",
-  "function": "float nsGlobalWindowOuter::GetMozInnerScreenYOuter(CallerType aCallerType) {",
-  "kind": "add",
-  "form": "anchor",
-  "line": "  if (const Maybe<float> y = StealthMozInnerScreenY(*this, r)) return *y;  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "wrapper:tests/test_a_click_in_an_iframe_lands_at_the_frames_own_screen_origin_e2e.py::test_a_real_click_in_an_iframe_has_the_screen_origin_of_the_iframe",
-  "anchor": "`nsRect r = GetInnerScreenRect();` of Mozilla",
-  "why": "same as mozInnerScreenX, for y."
- },
- {
-  "file": "dom/events/Event.cpp",
+  "file": "browser/actors/FormValidationParent.sys.mjs",
   "function": "",
   "kind": "add",
   "form": "registration",
-  "line": "#include \"StealthScreenCoords.h\"  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "wrapper:tests/test_a_click_in_an_iframe_lands_at_the_frames_own_screen_origin_e2e.py::test_a_real_click_in_an_iframe_has_the_screen_origin_of_the_iframe"
+  "line": "import { StealthScreenRectToReal } from \"resource://gre/modules/StealthScreenMap.sys.mjs\";  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
  },
  {
-  "file": "dom/events/Event.cpp",
-  "function": "Maybe<CSSDoublePoint> Event::GetScreenCoords(",
-  "kind": "add",
-  "form": "wrap-expression",
-  "line": "      StealthWithContentOrigin(aPresContext,  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "wrapper:tests/test_a_click_in_an_iframe_lands_at_the_frames_own_screen_origin_e2e.py::test_a_real_click_in_an_iframe_has_the_screen_origin_of_the_iframe"
- },
- {
-  "file": "dom/events/Event.cpp",
-  "function": "Maybe<CSSDoublePoint> Event::GetScreenCoords(",
+  "file": "browser/actors/FormValidationParent.sys.mjs",
+  "function": "export class FormValidationParent extends JSWindowActorParent {",
   "kind": "rewrite",
   "form": "wrap-expression",
-  "line": "          aPresContext->DeviceContext()->AppUnitsPerDevPixel())));  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "removed": "          aPresContext->DeviceContext()->AppUnitsPerDevPixel()));",
-  "test": "wrapper:tests/test_a_click_in_an_iframe_lands_at_the_frames_own_screen_origin_e2e.py::test_a_real_click_in_an_iframe_has_the_screen_origin_of_the_iframe"
+  "line": "    let rect = StealthScreenRectToReal(this.browsingContext, aPanelData.screenRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "    let rect = aPanelData.screenRect;",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "browser/base/content/browser.js",
+  "function": "var { AppConstants } = ChromeUtils.importESModule(",
+  "kind": "add",
+  "form": "registration",
+  "line": "var { StealthScreenXDevPxToReal, StealthScreenYDevPxToReal } = ChromeUtils.importESModule(\"resource://gre/modules/StealthScreenMap.sys.mjs\");  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "browser/base/content/browser.js",
+  "function": "var XULBrowserWindow = {",
+  "kind": "add",
+  "form": "rewire",
+  "line": "    xDevPix = StealthScreenXDevPxToReal(_browser.browsingContext, xDevPix);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "browser/base/content/browser.js",
+  "function": "var XULBrowserWindow = {",
+  "kind": "add",
+  "form": "rewire",
+  "line": "    yDevPix = StealthScreenYDevPxToReal(_browser.browsingContext, yDevPix);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "browser/components/genai/GenAI.sys.mjs",
+  "function": "import { AppConstants } from \"resource://gre/modules/AppConstants.sys.mjs\";",
+  "kind": "add",
+  "form": "registration",
+  "line": "import { StealthContextScreenToReal } from \"resource://gre/modules/StealthScreenMap.sys.mjs\";  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "browser/components/genai/GenAI.sys.mjs",
+  "function": "export const GenAI = {",
+  "kind": "add",
+  "form": "rewire",
+  "line": "        data = StealthContextScreenToReal(browser.browsingContext, data);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "docshell/base/CanonicalBrowsingContext.h",
+  "function": "namespace dom {",
+  "kind": "add",
+  "form": "registration",
+  "line": "class DOMRectReadOnly;  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]",
+  "quiet_anchor_why": {
+   "kind": "only-place",
+   "why": "a forward declaration has to precede the member that names the type; the namespace's forward declarations are the only place for it, and it sits with the declarations of the same file"
+  }
+ },
+ {
+  "file": "docshell/base/CanonicalBrowsingContext.h",
+  "function": "class CanonicalBrowsingContext final : public BrowsingContext {",
+  "kind": "add",
+  "form": "member",
+  "line": "  already_AddRefed<DOMRectReadOnly> StealthScreenRectToReal(DOMRectReadOnly& aRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "docshell/base/CanonicalBrowsingContext.h",
+  "function": "class CanonicalBrowsingContext final : public BrowsingContext {",
+  "kind": "add",
+  "form": "member",
+  "line": "  double StealthScreenXDevPxToReal(double aXDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "docshell/base/CanonicalBrowsingContext.h",
+  "function": "class CanonicalBrowsingContext final : public BrowsingContext {",
+  "kind": "add",
+  "form": "member",
+  "line": "  double StealthScreenYDevPxToReal(double aYDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/chrome-webidl/BrowsingContext.webidl",
+  "function": "interface CanonicalBrowsingContext : BrowsingContext {",
+  "kind": "add",
+  "form": "registration",
+  "line": "  [ChromeOnly] DOMRectReadOnly stealthScreenRectToReal(DOMRectReadOnly aRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/chrome-webidl/BrowsingContext.webidl",
+  "function": "interface CanonicalBrowsingContext : BrowsingContext {",
+  "kind": "add",
+  "form": "registration",
+  "line": "  [ChromeOnly] double stealthScreenXDevPxToReal(double aXDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/chrome-webidl/BrowsingContext.webidl",
+  "function": "interface CanonicalBrowsingContext : BrowsingContext {",
+  "kind": "add",
+  "form": "registration",
+  "line": "  [ChromeOnly] double stealthScreenYDevPxToReal(double aYDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
  },
  {
   "file": "dom/events/test/gtest/moz.build",
@@ -78,7 +138,206 @@
   "kind": "add",
   "form": "registration",
   "line": "UNIFIED_SOURCES += [\"TestStealthWindowGeometry.cpp\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
-  "test": "gtest:StealthWindowGeometry.FullscreenContentStartsAtTheScreenOrigin"
+  "test": "gtest:StealthWindowGeometry.FullscreenIsTheDeclaredScreen"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.cpp",
+  "function": "",
+  "kind": "add",
+  "form": "registration",
+  "line": "#include \"StealthGetDimensionInfo.h\"  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.cpp",
+  "function": "mozilla::ipc::IPCResult BrowserParent::RecvSetDimensions(",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "  webBrowserChrome->SetDimensions(StealthRealDimensionRequest(this, std::move(aRequest)));  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "  webBrowserChrome->SetDimensions(std::move(aRequest));",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.cpp",
+  "function": "void BrowserParent::UpdateDimensions(const LayoutDeviceIntRect& rect,",
+  "kind": "rewrite",
+  "form": "wrap-function",
+  "line": "DimensionInfo BrowserParent::GetDimensionInfo_Mozilla() {  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "DimensionInfo BrowserParent::GetDimensionInfo() {",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.cpp",
+  "function": "void BrowserParent::SetChildToParentConversionMatrix(",
+  "kind": "rewrite",
+  "form": "wrap-call",
+  "line": "  (void)StealthSendChildToParentMatrix(this, ToUnknownMatrix(aMatrix), aRemoteDocumentRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "  (void)SendChildToParentMatrix(ToUnknownMatrix(aMatrix), aRemoteDocumentRect);",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.h",
+  "function": "class BrowserParent final : public PBrowserParent,",
+  "kind": "add",
+  "form": "wrap-function",
+  "line": "  DimensionInfo GetDimensionInfo_Mozilla();  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/ipc/BrowserParent.h",
+  "function": "class BrowserParent final : public PBrowserParent,",
+  "kind": "add",
+  "form": "member",
+  "line": "  friend struct StealthWindowOrigin;  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "dom/ipc/gtest/moz.build",
+  "function": "UNIFIED_SOURCES += [",
+  "kind": "add",
+  "form": "registration",
+  "line": "UNIFIED_SOURCES += [\"TestStealthScreenToReal.cpp\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "gtest:StealthScreenToReal.APointInDevicePixelsLosesTheDelta"
+ },
+ {
+  "file": "dom/ipc/gtest/moz.build",
+  "function": "UNIFIED_SOURCES += [",
+  "kind": "add",
+  "form": "registration",
+  "line": "UNIFIED_SOURCES += [\"TestStealthChromeOffset.cpp\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "gtest:StealthChromeOffset.TheSnapIsTheRoundingOfGetChildProcessOffset"
+ },
+ {
+  "file": "dom/ipc/gtest/moz.build",
+  "function": "LOCAL_INCLUDES += [",
+  "kind": "add",
+  "form": "registration",
+  "line": "LOCAL_INCLUDES += [\"/dom/ipc\", \"/layout/generic\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "gtest:StealthChromeOffset.TheSnapIsTheRoundingOfGetChildProcessOffset"
+ },
+ {
+  "file": "dom/ipc/moz.build",
+  "function": "UNIFIED_SOURCES += [",
+  "kind": "add",
+  "form": "registration",
+  "line": "UNIFIED_SOURCES += [\"StealthScreenToReal.cpp\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "gtest:StealthScreenToReal.APointInDevicePixelsLosesTheDelta"
+ },
+ {
+  "file": "layout/generic/nsSubDocumentFrame.cpp",
+  "function": "",
+  "kind": "add",
+  "form": "registration",
+  "line": "#include \"StealthRemoteLayerOffset.h\"  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "layout/generic/nsSubDocumentFrame.cpp",
+  "function": "WebRenderCommandsResult nsDisplayRemote::CreateWebRenderCommands(",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "  mOffset = StealthRemoteLayerOffset(mFrame, LayoutDevicePoint::FromAppUnits(layerOffset, auPerDevPixel));  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "  mOffset = LayoutDevicePoint::FromAppUnits(layerOffset, auPerDevPixel);",
+  "test": "wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/actors/AutoCompleteParent.sys.mjs",
+  "function": "",
+  "kind": "add",
+  "form": "registration",
+  "line": "import { StealthScreenRectToReal } from \"resource://gre/modules/StealthScreenMap.sys.mjs\";  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/actors/AutoCompleteParent.sys.mjs",
+  "function": "export class AutoCompleteParent extends JSWindowActorParent {",
+  "kind": "add",
+  "form": "rewire",
+  "line": "    rect = StealthScreenRectToReal(this.browsingContext, rect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/actors/InputPickerParentCommon.sys.mjs",
+  "function": "",
+  "kind": "add",
+  "form": "registration",
+  "line": "import { StealthScreenRectToReal } from \"resource://gre/modules/StealthScreenMap.sys.mjs\";  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/actors/InputPickerParentCommon.sys.mjs",
+  "function": "export class InputPickerParentCommon extends JSWindowActorParent {",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "    let rect = StealthScreenRectToReal(this.browsingContext, aData.rect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "    let rect = aData.rect;",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/actors/SelectParent.sys.mjs",
+  "function": "",
+  "kind": "add",
+  "form": "registration",
+  "line": "import { StealthScreenRectToReal } from \"resource://gre/modules/StealthScreenMap.sys.mjs\";  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/actors/SelectParent.sys.mjs",
+  "function": "export class SelectParent extends JSWindowActorParent {",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "          StealthScreenRectToReal(this.browsingContext, data.rect),  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "          data.rect,",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/components/pictureinpicture/PictureInPicture.sys.mjs",
+  "function": "import { XPCOMUtils } from \"resource://gre/modules/XPCOMUtils.sys.mjs\";",
+  "kind": "add",
+  "form": "registration",
+  "line": "import { StealthContextScreenToReal } from \"resource://gre/modules/StealthScreenMap.sys.mjs\";  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/components/pictureinpicture/PictureInPicture.sys.mjs",
+  "function": "export class PictureInPictureToggleParent extends JSWindowActorParent {",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "        PictureInPicture.openToggleContextMenu(win, StealthContextScreenToReal(this.browsingContext, aMessage.data));  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "        PictureInPicture.openToggleContextMenu(win, aMessage.data);",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/content/widgets/browser-custom-element.mjs",
+  "function": "const { XPCOMUtils } = ChromeUtils.importESModule(",
+  "kind": "add",
+  "form": "registration",
+  "line": "const { StealthScreenXDevPxToReal, StealthScreenYDevPxToReal } = ChromeUtils.importESModule(\"resource://gre/modules/StealthScreenMap.sys.mjs\");  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/content/widgets/browser-custom-element.mjs",
+  "function": "export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {",
+  "kind": "add",
+  "form": "rewire",
+  "line": "    screenXDevPx = StealthScreenXDevPxToReal(browsingContext, screenXDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/content/widgets/browser-custom-element.mjs",
+  "function": "export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {",
+  "kind": "add",
+  "form": "rewire",
+  "line": "    screenYDevPx = StealthScreenYDevPxToReal(browsingContext, screenYDevPx);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "toolkit/modules/moz.build",
+  "function": "EXTRA_JS_MODULES += [",
+  "kind": "add",
+  "form": "registration",
+  "line": "EXTRA_JS_MODULES += [\"StealthScreenMap.sys.mjs\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]"
  },
  {
   "file": "widget/gtk/moz.build",
@@ -113,6 +372,42 @@
   "form": "registration",
   "line": "UNIFIED_SOURCES += [\"StealthFullscreen.cpp\"]  # STEALTH-HOOK(fingerprint/screen-window/geometry)",
   "test": "gtest:StealthFullscreen.TheRectOrTakesTheDeclaredScreenAndElseMozillas"
+ },
+ {
+  "file": "widget/nsBaseDragService.cpp",
+  "function": "",
+  "kind": "add",
+  "form": "registration",
+  "line": "#include \"StealthChromeOffset.h\"  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_drag_from_the_top_into_a_frame_of_another_site_e2e.py::test_a_drag_from_the_top_into_a_frame_of_another_site[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "widget/nsBaseDragService.cpp",
+  "function": "nsresult nsBaseDragSession::EndDragSessionImpl(bool aDoneDrag,",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, StealthDragPoint(bp, mEndDragPoint),  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "    (void)bp->SendEndDragSession(aDoneDrag, mUserCancelled, mEndDragPoint,",
+  "test": "wrapper:tests/test_a_drag_from_the_top_into_a_frame_of_another_site_e2e.py::test_a_drag_from_the_top_into_a_frame_of_another_site[1920x1080-dpr1.25]"
+ },
+ {
+  "file": "widget/nsBaseDragService.cpp",
+  "function": "nsresult nsBaseDragSession::DrawDrag(nsINode* aDOMNode,",
+  "kind": "add",
+  "form": "anchor",
+  "line": "    StealthMapDragRect(mSourceTopWindowContext, aScreenDragRect);  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "test": "wrapper:tests/test_a_drag_from_the_top_into_a_frame_of_another_site_e2e.py::test_a_drag_from_the_top_into_a_frame_of_another_site[1920x1080-dpr1.25]",
+  "anchor": "the `*aSurface = mDragStartData->TakeVisualization(aScreenDragRect)` block of DrawDrag",
+  "why": "the rect the child sent is consumed only by TakeVisualization; it is mapped after that block, so both the image and the visualization paths get real screen coordinates. A wrap of the call or of the argument cannot map the rect that TakeVisualization writes"
+ },
+ {
+  "file": "widget/nsBaseDragService.cpp",
+  "function": "nsBaseDragSession::SendStoreDropTargetAndDelayEndDragSession(",
+  "kind": "rewrite",
+  "form": "wrap-expression",
+  "line": "      StealthDragPoint(mDelayedDropBrowserParent, aEvent->WidgetEventPtr()->mRefPoint), dropEffect, mDragAction,  // STEALTH-HOOK(fingerprint/screen-window/geometry)",
+  "removed": "      aEvent->WidgetEventPtr()->mRefPoint, dropEffect, mDragAction,",
+  "test": "wrapper:tests/test_a_drag_from_the_top_into_a_frame_of_another_site_e2e.py::test_a_drag_from_the_top_into_a_frame_of_another_site[1920x1080-dpr1.25]"
  },
  {
   "file": "widget/nsIWidget.cpp",

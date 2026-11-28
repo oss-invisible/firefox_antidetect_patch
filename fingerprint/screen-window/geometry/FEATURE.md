@@ -2,14 +2,19 @@
 
 Category: spoof
 Prefs: zoom.stealth.screen.width, zoom.stealth.screen.height (the fullscreen rectangle, through gfx::StealthDeclaredScreenRect); the window frame through StealthDeclarationGate
-Test: dom/events/test/gtest/TestStealthWindowGeometry.cpp (StealthWindowGeometry.FullscreenContentStartsAtTheScreenOrigin, StealthWindowGeometry.OutsideFullscreenNothingChanges); widget/tests/gtest/TestStealthFullscreen.cpp (StealthFullscreen.TheDeclaredScreenAtTheDeclaredScale, StealthFullscreen.PlacedOnTheScreenTheWindowIsOn, StealthFullscreen.NothingWithoutADeclaredScreenOrAScale); juggler/tests/fullscreen_releases_the_viewport.test.mjs; the fullscreen state of the host gate in the wrapper (scripts/ci_host_gate.py: geometry after a real click on requestFullscreen() and after exitFullscreen(), with its invariants) on every CI host, Linux under Xvfb without a window manager included; the g.fullscreen key of headless_probe.py. widget/tests/gtest/TestStealthFullscreen.cpp also holds StealthFullscreen.AFullscreenMoveAndResizeLandsOnTheDeclaredRect and StealthFullscreen.TheLargestSizeGrowsToTheDeclaredScreenInFullscreen (the Windows rules); the host gate invariant fullscreen_is_the_screen on win-x86_64 is their end-to-end proof. Added: widget/tests/gtest/TestStealthFullscreen.cpp StealthFullscreen.TheRectOrTakesTheDeclaredScreenAndElseMozillas (the rectangle the widget moves to: declared, else Mozilla's); gtest:StealthMouseEventIPC.TheIdSurvivesTheMessage (the registration of the header of automation/input); wrapper e2e (to be written) tests/test_popup_geometry_is_the_declared_frame_e2e.py::test_a_popup_is_its_inner_size_plus_the_declared_frame and tests/test_a_click_in_an_iframe_lands_at_the_frames_own_screen_origin_e2e.py::test_a_real_click_in_an_iframe_has_the_screen_origin_of_the_iframe, and tests/test_context_locale_e2e.py::test_intl_in_the_page_realm_follows_the_language_and_zone_of_its_context (the language and zone hook that stays in this file).
+Test: dom/events/test/gtest/TestStealthWindowGeometry.cpp (the declared window at every scale, the popup, fullscreen, the bridged frame, the request that moves the real window by the declared amounts: StealthWindowGeometry.*); dom/ipc/gtest/TestStealthScreenToReal.cpp (StealthScreenToReal.*); dom/ipc/gtest/TestStealthChromeOffset.cpp (StealthChromeOffset.*); juggler/tests/every_parent_site_of_a_screen_coordinate_passes_the_map.test.mjs, juggler/tests/the_screen_map_of_the_parent_is_chrome_only.test.mjs; widget/tests/gtest/TestStealthFullscreen.cpp (StealthFullscreen.TheDeclaredScreenAtTheDeclaredScale, StealthFullscreen.PlacedOnTheScreenTheWindowIsOn, StealthFullscreen.NothingWithoutADeclaredScreenOrAScale, StealthFullscreen.AFullscreenMoveAndResizeLandsOnTheDeclaredRect, StealthFullscreen.TheLargestSizeGrowsToTheDeclaredScreenInFullscreen, StealthFullscreen.TheRectOrTakesTheDeclaredScreenAndElseMozillas); juggler/tests/fullscreen_releases_the_viewport.test.mjs; the fullscreen state of the host gate in the wrapper (scripts/ci_host_gate.py: geometry after a real click on requestFullscreen() and after exitFullscreen(), with its invariants) on every CI host, Linux under Xvfb without a window manager included; the g.fullscreen key of headless_probe.py; gtest:StealthMouseEventIPC.TheIdSurvivesTheMessage (the registration of the header of automation/input); wrapper:tests/test_the_maximized_window_frames_and_popups_read_retail_e2e.py::test_the_maximized_window_frames_and_popups_read_retail[1920x1080-dpr1.25] (the window, the frames and the popups read retail at every scale); wrapper:tests/test_a_select_dropdown_opens_at_its_element_e2e.py::test_a_select_dropdown_opens_at_its_element[1920x1080-dpr1.25]; wrapper:tests/test_a_drag_from_the_top_into_a_frame_of_another_site_e2e.py::test_a_drag_from_the_top_into_a_frame_of_another_site[1920x1080-dpr1.25]; wrapper:tests/test_context_locale_e2e.py::test_intl_in_the_page_realm_follows_the_language_and_zone_of_its_context.
 
 ## What it does
 
 The window geometry a page reads comes from the declaration, in every state
-the page can drive. Normal: the main window is the declared maximized window
-(outer size, screenX/Y, the content origin under mozInnerScreenX/Y and every
-mouse event), a popup its real inner size plus the declared frame. Fullscreen
+the page can drive, and it is declared where Firefox builds it for the content
+process: in the parent, in the DimensionInfo that BrowserParent sends. Normal:
+the main window is the declared maximized window (outer rect, client offset and
+chrome offset), a popup its real inner size plus the declared frame at the
+declared position. No content process holds the host's window position, so
+Firefox's own code in the child (screenX/Y, outerWidth/Height, mozInnerScreenX/Y,
+the screen coordinates of every event) reads the declared values with no
+correction of ours. Fullscreen
 (requestFullscreen, F11, a popup too): the window is the declared screen, as
 on retail (outer == inner == screen, position and content origin 0). The
 fullscreen state itself is decided on every host, not by the host's window
@@ -47,40 +52,74 @@ hook has to follow Mozilla's four ptMinTrackSize/ptMaxTrackSize assignments (it
 takes the maximum of their result and the declared rectangle), so it stays
 the last statement of that case block.
 
-## The content origin
+## The window origin
 
-dom/events/StealthScreenCoords.h holds StealthContentOriginShift, the ONE
-function that gives the declared content origin: mozInnerScreenX/Y
-(StealthWindowGeometry.h) and every mouse event (Event::GetScreenCoords, through
-StealthWithContentOrigin) both ask it, so event.screenX - event.clientX ==
-mozInnerScreenX holds in the main window, in popups and in out-of-process
-iframes (a subframe adds the shift to its OWN rectangle). It is arithmetic and
-widget queries only: Event::GetScreenCoords is the hot path of every trusted
-mouse and wheel event. The sum stays in integer app units, in Mozilla's order,
-and is converted to CSS pixels once, by Mozilla's FromAppUnits.
+dom/ipc/StealthWindowOrigin.h declares the window origin W and the chrome offset T in
+the one place Firefox builds them for the content process: BrowserParent::GetDimensionInfo
+(Mozilla's body is renamed GetDimensionInfo_Mozilla; the definition on top of it is in
+dom/ipc/StealthGetDimensionInfo.h, included by BrowserParent.cpp alone). The arithmetic is
+pure and lives in gfx/thebes/StealthDeclarationGate (StealthDeclaredWindowDimensions,
+StealthDeclaredClientOrigin, StealthMaximizedWindowTopLeft, StealthRealOuterRequest), where the
+gtests call it. The one lookup of the top of a tab (StealthTopBrowserParent) follows the
+BrowserBridgeParent chain, so a tab, a popup, an in-process frame and an out-of-process frame
+at any depth read the same declaration. A frame bridged to its embedder has no chrome offset of
+its own.
+
+A request from the content process (moveTo, resizeTo and the like) is computed from the declared
+window, so the parent turns it into the request for the real window (StealthRealDimensionRequest in the
+BrowserParent function that passes it on): the real window moves and resizes by the declared amounts, and
+a requested position is also the popup's new declared position (the declaration is sent again to
+the tab and its frames).
+
+The parent maps back every screen coordinate it gets from content (dom/ipc/StealthScreenToReal.h,
+toolkit/modules/StealthScreenMap.sys.mjs): the content computed it from the declared W and T, the
+native panel opens on the real screen, so p_real = p_declared - d with d = (declared W + declared T) -
+(real W + real T) of the top tab. Nine parent-side sites pass the coordinate through the map (the
+context menu, the form validation bubble, the autocomplete popup, the date and colour pickers, the
+select dropdown, the Picture-in-Picture toggle, the GenAI chat button and the browser element); the
+three methods of CanonicalBrowsingContext that do it are [ChromeOnly], a page has no BrowsingContext
+object to ask. The drag image rect goes through the same map (StealthRealDragRect).
+
+The matrix that BrowserParent sends to an out-of-process child and the two drag points that
+nsBaseDragService sends carry the chrome offset in declared space (dom/ipc/StealthChromeOffset.h:
+StealthSendChildToParentMatrix, StealthDragPoint); the stored matrix is never changed, every input
+conversion in the parent stays real. The chrome offset is whole at its birth: the offset of the
+remote layer of nsSubDocumentFrame is rounded to device pixels, the same rounding as
+BrowserParent::GetChildProcessOffset (layout/generic/StealthRemoteLayerOffset.h,
+StealthSnapOffset.h), so a client coordinate is R(x * scale) on every host. Juggler's input origin
+is the same whole number (automation/juggler PageHandler._browserOrigin).
+
+A popup's position at birth is declared by fingerprint/screen-window/popup-position and stored on
+the top CanonicalBrowsingContext; StealthWindowOrigin reads it from there.
 
 ## Hooks in Mozilla files
 
-Registration (an include in a block of ours after Mozilla's includes, or a moz.build line after the closing `]`):
-- `dom/base/nsGlobalWindowOuter.cpp`: `StealthWindowGeometry.h` (this folder) and `mozilla/dom/StealthSessionDeclaration.h` (marker of fingerprint/locale-time/session-declaration, which owns the function; the file is ours).
-- `dom/events/Event.cpp`: `StealthScreenCoords.h`. `widget/nsIWidget.cpp`: `StealthFullscreen.h`. `widget/windows/nsWindow.cpp`: `StealthFullscreenWin.h`.
-- `widget/moz.build` (SOURCES, and `EXPORTS.ipc += ["StealthMouseEventIPC.h"]`, marker of automation/input, which owns the file), `widget/gtk/moz.build` (SOURCES, X11 headers), `widget/windows/moz.build` (SOURCES, windows.h), `widget/tests/gtest/moz.build`, `dom/events/test/gtest/moz.build`: build our files and tests.
+Registration (an include in a block of ours after Mozilla's includes, an import, or a moz.build line after the closing `]`):
+- `dom/ipc/BrowserParent.cpp`: `StealthGetDimensionInfo.h`, `StealthScreenToReal.h`, `StealthChromeOffset.h`. `layout/generic/nsSubDocumentFrame.cpp`: `StealthRemoteLayerOffset.h`. `widget/nsBaseDragService.cpp`: `StealthChromeOffset.h`. `widget/nsIWidget.cpp`: `StealthFullscreen.h`. `widget/windows/nsWindow.cpp`: `StealthFullscreenWin.h`.
+- The import of `resource://gre/modules/StealthScreenMap.sys.mjs` in the nine parent-side sites (ContextMenuParent, FormValidationParent, browser.js, GenAI, AutoCompleteParent, InputPickerParentCommon, SelectParent, PictureInPicture, browser-custom-element).
+- `docshell/base/CanonicalBrowsingContext.h`: the forward declaration `class DOMRectReadOnly;`. `dom/chrome-webidl/BrowsingContext.webidl`: the three [ChromeOnly] methods of the map.
+- `dom/ipc/moz.build` (StealthScreenToReal.cpp), `toolkit/modules/moz.build` (StealthScreenMap.sys.mjs), `dom/ipc/gtest/moz.build` (TestStealthScreenToReal.cpp, TestStealthChromeOffset.cpp, and /dom/ipc and /layout/generic in LOCAL_INCLUDES), `dom/events/test/gtest/moz.build`, `widget/moz.build` (SOURCES, and `EXPORTS.ipc += ["StealthMouseEventIPC.h"]`, marker of automation/input, which owns the file), `widget/gtk/moz.build` (SOURCES, X11 headers), `widget/windows/moz.build` (SOURCES, windows.h), `widget/tests/gtest/moz.build`: build our files and tests.
 
-Wrap of an expression (Mozilla's expression stays, inside our call):
+Wrap of a function (the body keeps Mozilla's code under a new name):
+- `dom/ipc/BrowserParent.cpp` and `BrowserParent.h`: BrowserParent::GetDimensionInfo becomes GetDimensionInfo_Mozilla; the function of the old name is ours (StealthGetDimensionInfo.h). BrowserParent.h also names StealthWindowOrigin as a friend (member).
+
+Wrap of an expression or of a call (Mozilla's expression stays, inside our call):
+- `dom/ipc/BrowserParent.cpp`: `webBrowserChrome->SetDimensions(StealthRealDimensionRequest(this, std::move(aRequest)))` in the request from the content process; `StealthSendChildToParentMatrix(this, ToUnknownMatrix(aMatrix), aRemoteDocumentRect)` in the matrix send; `StealthRealDragRect(this, aDragRect)` in the argument of the drag start.
+- `widget/nsBaseDragService.cpp`: `StealthDragPoint(bp, mEndDragPoint)` and `StealthDragPoint(mDelayedDropBrowserParent, <the ref point of the event>)` in the two drag points that are sent to the child.
+- `layout/generic/nsSubDocumentFrame.cpp`: `mOffset = StealthRemoteLayerOffset(mFrame, <Mozilla's expression>)`.
 - `widget/nsIWidget.cpp`, nsIWidget::InfallibleMakeFullScreen: `doReposition(StealthFullscreenRectOr(*this, DesktopRect(screen->GetRectDisplayPix())))`. With the engine off, or without a declared screen, it is Mozilla's rectangle; otherwise doReposition receives the declared rectangle and Mozilla's next statement (save the new position) does what the old early return did by hand.
-- `dom/events/Event.cpp`, Event::GetScreenCoords: `... + StealthWithContentOrigin(aPresContext, <Mozilla's last summand>)` inside Mozilla's FromAppUnits: one added opening line and one Mozilla line rewritten (the last, which closes the call), the marker on it. Integer addition: A + (B + shift) is (A + B) + shift.
+- In JavaScript (the form wrap-expression, or rewire for a statement that reassigns a local): the nine parent-side sites pass the value Mozilla read from the content message through StealthScreenRectToReal, StealthContextScreenToReal, StealthScreenXDevPxToReal or StealthScreenYDevPxToReal, with the BrowsingContext of the actor or of the browser.
 
 Addition (a call between two Mozilla blocks):
 - `widget/windows/nsWindow.cpp`, nsWindow::OnWindowPosChanging: `mozilla::widget::StealthHoldDeclaredFullscreen(*this, info);` between the forced-fullscreen block and the DWM block; nsWindow.h is the tag's.
 
 Member:
+- `docshell/base/CanonicalBrowsingContext.h`: the three methods of the map (StealthScreenRectToReal, StealthScreenXDevPxToReal, StealthScreenYDevPxToReal, defined in dom/ipc/StealthScreenToReal.cpp). The members of the popup's position are the hooks of fingerprint/screen-window/popup-position in the same file.
 - `widget/gtk/nsWindow.h`: declares nsWindow::StealthMakeFullScreenWithoutWM (defined in widget/gtk/StealthFullscreenGtk.cpp). The call, `if (StealthMakeFullScreenWithoutWM(aFullScreen)) return NS_OK;` inside Mozilla's `if (GdkIsX11Display() && !IsFullscreenSupported(mShell)) {` block of `widget/gtk/nsWindow.cpp` (nsWindow::MakeFullScreen), is in this folder, byte for byte the form fingerprint/screen-window/occlusion carries too (G48).
 
-Anchors (a call right after a Mozilla statement, listed with their reason in HOOKS.json):
-- `dom/base/nsGlobalWindowOuter.cpp`: GetOuterSize and GetScreenXY after Mozilla's resistFingerprinting check (GetScreenXY after the tree-owner check too, passing its local), GetMozInnerScreenXOuter/YOuter after `nsRect r = GetInnerScreenRect();`. A guard at the head of these functions would answer before Mozilla's resistFingerprinting check, which the core only defaults to false (an extra_prefs overlay can turn it on), so they stay where they are.
+Anchor (a call right after a Mozilla statement, listed with its reason in HOOKS.json):
 - `widget/windows/nsWindow.cpp`, case WM_GETMINMAXINFO: after the four ptMinTrackSize/ptMaxTrackSize assignments, the last statement of the block (the one exception of rule 5, G30).
 
-Rewritten line, a declared exception of kind expression (approved by the pm):
-- `dom/base/nsGlobalWindowOuter.cpp`, CreateNativeGlobalForInner: the two arguments `Top()->GetLanguageOverride()` / `GetTimezoneOverride()` of `xpc::InitGlobalObjectOptions` are replaced by `GetDeclaredRealmLanguage(aDocument), GetDeclaredRealmTimezone(aDocument)` with a marker comment line of fingerprint/locale-time/session-declaration, which owns the functions. They are the document's context language and zone, or the session's when the context carries none, including a document with no BrowsingContext. Mozilla's two expressions dereference the BrowsingContext and are evaluated before any code of ours, so a wrap of the call or of the arguments would crash for a document with no context; no add-only form can substitute a value for them or stop their evaluation, and a hook before the statement cannot skip it.
+Fractional host chrome offset: it is a host dependence and it dies at birth. The chrome offset of the remote layer is rounded where it is born (nsSubDocumentFrame), and what the parent sends for the child is declared, so any transform and any host chrome offset give retail's value.
 
-`dom/base/nsGlobalWindowOuter.h` is the tag's again: StealthContentOriginShift is a free inline function in StealthScreenCoords.h.
+No hook is a declared exception.

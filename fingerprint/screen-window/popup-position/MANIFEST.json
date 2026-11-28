@@ -1,5 +1,6 @@
 {
  "modified": [
+  "docshell/base/CanonicalBrowsingContext.h",
   "toolkit/components/windowwatcher/moz.build",
   "toolkit/components/windowwatcher/nsWindowWatcher.cpp"
  ],
@@ -8,10 +9,23 @@
   "toolkit/components/windowwatcher/StealthWindowPlacement.h": "100644"
  },
  "sha256": {
-  "toolkit/components/windowwatcher/StealthWindowPlacement.cpp": "fdcac6fcaa4898c44731f0f9879f444bb0ea93510171374233dbd80b62c34fd8",
-  "toolkit/components/windowwatcher/StealthWindowPlacement.h": "2a6b9e18fc21e3a05bdb40fe74d5ec9d4fe35d636408cef2d0de2beaf03f3b70"
+  "toolkit/components/windowwatcher/StealthWindowPlacement.cpp": "eae90c9873038e96266f8579d96c3ec6d5f35fbf7910845e84ec03d17b551de0",
+  "toolkit/components/windowwatcher/StealthWindowPlacement.h": "854c80c32d26db11855b346a32fa722f776ee3bea27d5fd1bbc5b63de889980d"
  },
  "inventory": [
+  {
+   "file": "docshell/base/CanonicalBrowsingContext.h",
+   "category": "spoof",
+   "feature": "popup-default-position",
+   "prefs": [],
+   "added": 3,
+   "removed": 0,
+   "hunks": 2,
+   "inline_logic_lines": 0,
+   "hookable": "already-hook",
+   "anchor": "after the members of the class (the three members follow one another)",
+   "notes": "The popup's position at birth: mStealthPopupPosition (Maybe of a device-pixel point), its accessor StealthPopupPosition() and the setter StealthSetPopupPosition (defined in StealthWindowPlacement.cpp). The position is set when the popup is created and read by the window origin."
+  },
   {
    "file": "toolkit/components/windowwatcher/moz.build",
    "category": "build",

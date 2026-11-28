@@ -30,22 +30,5 @@
   "form": "guard",
   "line": "  if (auto declared = gfx::StealthDeclaredAvailRect()) return *declared;  // STEALTH-HOOK(fingerprint/screen-window/screen)",
   "test": "wrapper:tests/test_fingerprint_surface.py::test_a_declared_screen_that_no_runner_has_is_what_the_page_reads"
- },
- {
-  "file": "layout/base/nsPresContext.cpp",
-  "function": "",
-  "kind": "add",
-  "form": "registration",
-  "line": "#include \"StealthInnerSizeSync.h\"  // STEALTH-HOOK(fingerprint/screen-window/screen)",
-  "test": "wrapper:tests/test_fingerprint_surface.py::test_the_inner_size_of_the_top_is_synced_with_the_engine_active_and_not_without"
- },
- {
-  "file": "layout/base/nsPresContext.cpp",
-  "function": "void nsPresContext::UpdateInnerSizeSpoofedForRFP() {",
-  "kind": "rewrite",
-  "form": "wrap-expression",
-  "line": "  if (!StealthRfpOrEngineActive(mDocument->ShouldResistFingerprinting(RFPTarget::WindowOuterSize)) ||  // STEALTH-HOOK(fingerprint/screen-window/screen)",
-  "removed": "  if (!mDocument->ShouldResistFingerprinting(RFPTarget::WindowOuterSize) ||",
-  "test": "wrapper:tests/test_fingerprint_surface.py::test_the_inner_size_of_the_top_is_synced_with_the_engine_active_and_not_without"
  }
 ]

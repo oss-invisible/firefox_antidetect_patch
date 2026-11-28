@@ -52,7 +52,7 @@ GREEN_FILTER = ("StealthGfxFeatureStatus.*:StealthWebGPUAdapter.*:StealthWebGPUD
                 "mes.*:StealthFcFontList.*:StealthFontList.*:StealthFontMetrics.*:StealthMediaDeclaration.*:StealthOwnBinaries."
                 "*:StealthQuotaEstimate.*:StealthTextQuality.*:StealthTtcFace.*:StealthWebGPUExternalTexture.*:Intl_Locale_Stea"
                 "lthSystemLocales.*:Idwr.*:"
-                "StealthBranding.*:StealthCanvasUtils.*:StealthDragGesture.*:StealthHttp3Socks.*:StealthJugglerCoalesce.*:StealthJugglerMouseAck.*:StealthMouseEventCopy.*:StealthMouseEventIPC.*:StealthNsProxyInfoKinds.*:StealthSocksUdpLayer.*:StealthStackFrames.*:StealthStartupCache.*:StealthTimezone.*:StealthExclusivePort.*:StealthCallerObject.*:StealthSurfaceFlags.*:StealthMediaEnumeration.*:StealthCanvasPageSnapshot.*:TestStealthLookupLoadInfo.*")
+                "StealthBranding.*:StealthCanvasUtils.*:StealthDragGesture.*:StealthHttp3Socks.*:StealthJugglerCoalesce.*:StealthJugglerMouseAck.*:StealthMouseEventCopy.*:StealthMouseEventIPC.*:StealthNsProxyInfoKinds.*:StealthSocksUdpLayer.*:StealthStackFrames.*:StealthStartupCache.*:StealthTimezone.*:StealthExclusivePort.*:StealthCallerObject.*:StealthSurfaceFlags.*:StealthMediaEnumeration.*:StealthCanvasPageSnapshot.*:TestStealthLookupLoadInfo.*:StealthScreenToReal.*:StealthChromeOffset.*")
 GTEST_JOBS = ("gtest-linux", "gtest-cross")
 COMPILE_ONLY_IF = "needs.plan.outputs.stop_after != 'objects'"
 # The steps of a build leg that come after the objects, and are for the browser's build and its package: a compile-only run (stop_after=objects) runs none.

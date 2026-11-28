@@ -115,7 +115,7 @@ DEFAULT_GTEST_FILTER = ("StealthGfxFeatureStatus.*:StealthWebGPUAdapter.*:"
                         "StealthQuotaEstimate.*:StealthTextQuality.*:StealthTtcFace.*:StealthWebGPUExternalTexture.*:"
                         "Intl_Locale_StealthSystemLocales.*:Idwr.*:"
                         "StealthBranding.*:StealthCanvasUtils.*:StealthDragGesture.*:StealthHttp3Socks.*:StealthJugglerCoalesce.*:"
-                        "StealthJugglerMouseAck.*:StealthMouseEventCopy.*:StealthMouseEventIPC.*:StealthNsProxyInfoKinds.*:StealthSocksUdpLayer.*:StealthStackFrames.*:StealthStartupCache.*:StealthTimezone.*:StealthExclusivePort.*:StealthCallerObject.*:StealthSurfaceFlags.*:StealthMediaEnumeration.*:StealthCanvasPageSnapshot.*:TestStealthLookupLoadInfo.*")
+                        "StealthJugglerMouseAck.*:StealthMouseEventCopy.*:StealthMouseEventIPC.*:StealthNsProxyInfoKinds.*:StealthSocksUdpLayer.*:StealthStackFrames.*:StealthStartupCache.*:StealthTimezone.*:StealthExclusivePort.*:StealthCallerObject.*:StealthSurfaceFlags.*:StealthMediaEnumeration.*:StealthCanvasPageSnapshot.*:TestStealthLookupLoadInfo.*:StealthScreenToReal.*:StealthChromeOffset.*")
 DEFAULT_REF = "main"
 # Where the wrapper's pin is read and the core's tags are looked up (the same repositories gate.yml checks out and installs).
 WRAPPER_REPOSITORY = "oss-invisible/playwright"

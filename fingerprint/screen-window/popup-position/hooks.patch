@@ -1,3 +1,24 @@
+diff --git a/docshell/base/CanonicalBrowsingContext.h b/docshell/base/CanonicalBrowsingContext.h
+index 01c2f59dd92f2fb36c258e878da4c88208566ced..baf36611aaf0e94be9ab1a50e2dbded17d2d1f40 100644
+--- a/docshell/base/CanonicalBrowsingContext.h
++++ b/docshell/base/CanonicalBrowsingContext.h
+@@ -384,6 +384,8 @@ class CanonicalBrowsingContext final : public BrowsingContext {
+   void SynchronizeNavigationAPIState(nsIStructuredCloneContainer* aState);
+ 
+   void ResetScalingZoom();
++  Maybe<LayoutDeviceIntPoint> StealthPopupPosition() const { return mStealthPopupPosition; }  // STEALTH-HOOK(fingerprint/screen-window/popup-position)
++  void StealthSetPopupPosition(const LayoutDeviceIntPoint& aPoint);  // STEALTH-HOOK(fingerprint/screen-window/popup-position)
+ 
+   void SetContainerPermissionsPolicy(
+       Maybe<PermissionsPolicyInfo>&& aContainerPermissionsPolicyInfo);
+@@ -713,6 +715,7 @@ class CanonicalBrowsingContext final : public BrowsingContext {
+   RefPtr<PendingRemotenessChange> mPendingRemotenessChange;
+ 
+   RefPtr<nsSHistory> mSessionHistory;
++  Maybe<LayoutDeviceIntPoint> mStealthPopupPosition;  // STEALTH-HOOK(fingerprint/screen-window/popup-position)
+ 
+   // Tab media controller is used to control all media existing in the same
+   // browsing context tree, so it would only exist in the top level browsing
 diff --git a/toolkit/components/windowwatcher/moz.build b/toolkit/components/windowwatcher/moz.build
 index 54c299fef9cc6803792067c39a6ddf21b09773cb..13fa7db13d634947d4226ebdfa627b80257bd302 100644
 --- a/toolkit/components/windowwatcher/moz.build
@@ -11,7 +32,7 @@ index 54c299fef9cc6803792067c39a6ddf21b09773cb..13fa7db13d634947d4226ebdfa627b80
  FINAL_LIBRARY = "xul"
  # For nsJSUtils
 diff --git a/toolkit/components/windowwatcher/nsWindowWatcher.cpp b/toolkit/components/windowwatcher/nsWindowWatcher.cpp
-index 4de5c2290a01997a5fe0784b15525055d56f6893..49290fc90538d52c43634b5afc17238c3c9de3d7 100644
+index 4de5c2290a01997a5fe0784b15525055d56f6893..43fc6c5eda56a5b348a5142509502406800787fb 100644
 --- a/toolkit/components/windowwatcher/nsWindowWatcher.cpp
 +++ b/toolkit/components/windowwatcher/nsWindowWatcher.cpp
 @@ -78,6 +78,8 @@
@@ -27,7 +48,7 @@ index 4de5c2290a01997a5fe0784b15525055d56f6893..49290fc90538d52c43634b5afc17238c
    }
  
    bool positionSpecified = aSizeSpec.PositionSpecified();
-+  mozilla::StealthPlacePopupAtDefault(aIsCallerChrome, treeOwnerAsWin, aSizeSpec.mLeft.isSome(), aSizeSpec.mTop.isSome(), left, top, positionSpecified);  // STEALTH-HOOK(fingerprint/screen-window/popup-position)
++  mozilla::StealthPlacePopupAtDefault(aIsCallerChrome, treeOwnerAsWin, aSizeSpec, left, top, positionSpecified);  // STEALTH-HOOK(fingerprint/screen-window/popup-position)
  
    // Check security state for use in determining window dimensions
    bool enabled = false;
